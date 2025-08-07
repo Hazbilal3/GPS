@@ -158,7 +158,7 @@ const handleRegister = async (e: React.FormEvent) => {
               className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
               style={{ textDecoration: "none" }}
             >
-              {showPassword ? "🙈" : "👁️"}
+              {showPassword ? <i className="fa-solid fa-eye"></i> : <i className="fa-solid fa-eye-slash"></i>}
             </button>
           </div>
 
@@ -182,7 +182,7 @@ const handleRegister = async (e: React.FormEvent) => {
               className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
               style={{ textDecoration: "none" }}
             >
-              {showConfirmPassword ? "🙈" : "👁️"}
+              {showConfirmPassword ? <i className="fa-solid fa-eye"></i> : <i className="fa-solid fa-eye-slash"></i>}
             </button>
           </div>
 
