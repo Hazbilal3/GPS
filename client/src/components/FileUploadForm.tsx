@@ -74,13 +74,14 @@ const FileUploadForm: React.FC = () => {
     }
 
     const formData = new FormData();
-    formData.append("driverId", driverId);
+    // formData.append("driverId", driverId);
     formData.append("file", file);
 
     setStatus("Uploading...");
+    const port = 'http://localhost:3000/'
 
     try {
-      const response = await fetch("/upload", {
+      const response = await fetch(port+"upload", {
         method: "POST",
         body: formData,
       });
@@ -95,12 +96,12 @@ const FileUploadForm: React.FC = () => {
         setStatus("❌ Upload failed.");
       }
     } catch (error) {
-      setStatus("❌ Network error.");
+      setStatus(error);
     }
   };
 
   return (
-    <form className="upload-wrapper" onSubmit={handleSubmit}>
+    <form className="upload-wrapper">
       <div className="dropdown-wrapper top-dropdown">
         <div className="dropdown-container">
           <div
@@ -170,7 +171,8 @@ const FileUploadForm: React.FC = () => {
       <button
         type="submit"
         className="submit-btn"
-        disabled={!file || !driverId}
+        // disabled={!file || !driverId}
+        onClick={handleSubmit}
       >
         Upload
       </button>
