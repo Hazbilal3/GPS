@@ -1,27 +1,22 @@
-import React, {
-  useState,
-  useRef,
-  type ChangeEvent,
-  type DragEvent,
-} from "react";
-import { FiChevronDown } from "react-icons/fi";
+import React, { useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import "../assets/components-css/FileUploadForm.css";
 
-const mockDrivers = [
-  { id: 1, name: "Driver A" },
-  { id: 2, name: "Driver B" },
-  { id: 3, name: "Driver C" },
+const COLUMNS = [
+  "Barcode",
+  "Address",
+  "GPS Location",
+  "Expected Location",
+  "Distance (km)",
+  "Status",
+  "Google Maps Link",
 ];
 
 const FileUploadForm: React.FC = () => {
-  const [driverId, setDriverId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const toggleDropdown = () => setDropdownOpen((prev) => !prev);
+  const [response, setResponse] = useState<any[]>([]);
 
   const handleFileDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -36,7 +31,6 @@ const FileUploadForm: React.FC = () => {
 
   const validateAndSetFile = (selectedFile: File | undefined) => {
     if (!selectedFile) return;
-
     if (isExcelFile(selectedFile)) {
       setFile(selectedFile);
       setStatus(null);
@@ -68,130 +62,133 @@ const FileUploadForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !driverId) {
-      setStatus("Please select both a driver and a file.");
+    if (!file) {
+      setStatus("Please select a file.");
       return;
     }
 
     const formData = new FormData();
-    // formData.append("driverId", driverId);
     formData.append("file", file);
 
     setStatus("Uploading...");
-    const port = 'http://localhost:3000/'
+    const port = "http://localhost:3000/";
 
     try {
-      const response = await fetch(port+"upload", {
+      const res = await fetch(port + "upload", {
         method: "POST",
         body: formData,
       });
 
-      if (response.ok) {
+      if (res.ok) {
+        const result = await res.json();
+        setResponse(result);
         setShowModal(true);
         setStatus(null);
         setFile(null);
-        setDriverId("");
         if (inputRef.current) inputRef.current.value = "";
       } else {
         setStatus("❌ Upload failed.");
       }
-    } catch (error) {
-      setStatus(error);
+    } catch (error: any) {
+      setStatus("❌ " + error.message || "Network error.");
     }
   };
 
   return (
-    <form className="upload-wrapper">
-      <div className="dropdown-wrapper top-dropdown">
-        <div className="dropdown-container">
-          <div
-            className="dropdown-trigger"
-            onClick={toggleDropdown}
-            tabIndex={0}
-            onBlur={() => setTimeout(() => setDropdownOpen(false), 150)}
-          >
-            <span>
-              {driverId
-                ? mockDrivers.find((d) => d.id.toString() === driverId)?.name
-                : "Choose a driver"}
-            </span>
-            <span className={`dropdown-icon ${dropdownOpen ? "rotate" : ""}`}>
-              <FiChevronDown size={20} />
-            </span>
-          </div>
-
-          {dropdownOpen && (
-            <ul className="custom-dropdown-menu" role="listbox">
-              {mockDrivers.map((driver) => (
-                <li
-                  key={driver.id}
-                  onClick={() => {
-                    setDriverId(driver.id.toString());
-                    setDropdownOpen(false);
-                  }}
-                >
-                  {driver.name}
-                </li>
-              ))}
-            </ul>
+    <>
+      <form className="upload-wrapper">
+        {/* Drop Area */}
+        <div
+          className="drop-area"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleFileDrop}
+        >
+          <img
+            src="https://img.icons8.com/color/48/google-sheets.png"
+            alt="excel"
+            className="upload-icon"
+          />
+          <p className="upload-title">Select a CSV/Excel file to import</p>
+          <p className="upload-subtitle">or drag and drop it here</p>
+          <input
+            type="file"
+            ref={inputRef}
+            accept=".csv, .xlsx, .xls"
+            onChange={handleFileChange}
+            hidden
+          />
+          {file && (
+            <div className="file-preview">
+              <p className="file-name-preview">📄 {file.name}</p>
+              <span className="remove-file" onClick={handleRemoveFile}>
+                ×
+              </span>
+            </div>
           )}
         </div>
-      </div>
 
-      <div
-        className="drop-area"
-        onClick={() => inputRef.current?.click()}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleFileDrop}
-      >
-        <img
-          src="https://img.icons8.com/color/48/google-sheets.png"
-          alt="excel"
-          className="upload-icon"
-        />
-        <p className="upload-title">Select a CSV file to import</p>
-        <p className="upload-subtitle">or drag and drop it here</p>
-        <input
-          type="file"
-          ref={inputRef}
-          accept=".csv, .xlsx, .xls"
-          onChange={handleFileChange}
-          hidden
-        />
-        {file && (
-          <div className="file-preview">
-            <p className="file-name-preview">📄 {file.name}</p>
-            <span className="remove-file" onClick={handleRemoveFile}>
-              ×
-            </span>
+        {/* Upload Button */}
+        <button type="submit" className="submit-btn" onClick={handleSubmit}>
+          Upload
+        </button>
+
+        {/* Status */}
+        {status && <div className="upload-status">{status}</div>}
+
+        {/* Modal */}
+        {showModal && (
+          <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>✅ Upload Successful</h3>
+              <p>Your file has been uploaded successfully.</p>
+              <button className="close-btn" onClick={() => setShowModal(false)}>
+                Close
+              </button>
+            </div>
           </div>
         )}
-      </div>
+      </form>
 
-      <button
-        type="submit"
-        className="submit-btn"
-        // disabled={!file || !driverId}
-        onClick={handleSubmit}
-      >
-        Upload
-      </button>
-
-      {status && <div className="upload-status">{status}</div>}
-
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>✅ Upload Successful</h3>
-            <p>Your file has been uploaded successfully.</p>
-            <button className="close-btn" onClick={() => setShowModal(false)}>
-              Close
-            </button>
+      {/* Table */}
+      {Array.isArray(response) && response.length > 0 && (
+        <div className="response-table-wrapper">
+          <h4>📋 Uploaded Records</h4>
+          <div className="table-scroll-container">
+            <table className="styled-table">
+              <thead>
+                <tr>
+                  {COLUMNS.map((col) => (
+                    <th key={col}>{col}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {response.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {COLUMNS.map((col, colIndex) => {
+                      const value = row[col] ?? "";
+                      // Make Google Maps Link clickable
+                      if (col === "Google Maps Link" && value) {
+                        return (
+                          <td key={colIndex}>
+                            <a href={value} target="_blank" rel="noopener noreferrer">
+                              View Map
+                            </a>
+                          </td>
+                        );
+                      }
+                      return <td key={colIndex}>{String(value)}</td>;
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-    </form>
-  );
+    </>
+  );  
 };
 
 export default FileUploadForm;
