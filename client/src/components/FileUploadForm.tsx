@@ -96,6 +96,7 @@ const FileUploadForm: React.FC = () => {
 
   return (
     <>
+
       <form className="upload-wrapper">
         {/* Drop Area */}
         <div
@@ -187,6 +188,7 @@ const FileUploadForm: React.FC = () => {
           </div>
         </div>
       )}
+
     </>
   );  
 };

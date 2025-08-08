@@ -80,95 +80,89 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100"
-      style={{ background: "linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC)" }}>
-      <div className="bg-white p-4 p-md-5 rounded-4 shadow" style={{ width: "100%", maxWidth: 380 }}>
-        <h2 className="text-center fw-bold mb-4">Login Form</h2>
+<div className="auth-page">
+    <div className="auth-card">
+      <h2 className="text-center fw-bold mb-4">Login Form</h2>
 
-        <div className="d-flex gap-2 mb-3">
+      {/* Role toggle */}
+      <div className="d-flex gap-2 mb-3 role-toggle">
+        <button
+          type="button"
+          className={`btn w-100 ${role === "admin" ? "btn-primary" : "btn-outline-secondary"}`}
+          onClick={() => setRole("admin")}
+        >
+          Admin
+        </button>
+        <button
+          type="button"
+          className={`btn w-100 ${role === "driver" ? "btn-primary" : "btn-outline-secondary"}`}
+          onClick={() => setRole("driver")}
+        >
+          Driver
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} noValidate>
+        {role === "admin" ? (
+          <input
+            type="email"
+            className="form-control mb-3"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        ) : (
+          <input
+            type="text"
+            className="form-control mb-3"
+            placeholder="Driver ID (number)"
+            value={driverId}
+            onChange={(e) => setDriverId(e.target.value)}
+            required
+          />
+        )}
+
+        {/* Password with eye icon */}
+        <div className="position-relative mb-2">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="form-control"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
           <button
             type="button"
-            className={`btn w-100 ${role === "admin" ? "btn-primary" : "btn-outline-secondary"}`}
-            style={{ borderRadius: 24 }}
-            onClick={() => setRole("admin")}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            onClick={() => setShowPassword((s) => !s)}
+            className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
+            style={{ textDecoration: "none" }}
           >
-            Admin
-          </button>
-          <button
-            type="button"
-            className={`btn w-100 ${role === "driver" ? "btn-primary" : "btn-outline-secondary"}`}
-            style={{ borderRadius: 24 }}
-            onClick={() => setRole("driver")}
-          >
-            Driver
+            {showPassword ? <i className="fa-solid fa-eye"></i> : <i className="fa-solid fa-eye-slash"></i>}
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          {role === "admin" ? (
-            <input
-              type="email"
-              className="form-control mb-3"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ borderRadius: 12, padding: "0.75rem 1rem" }}
-            />
-          ) : (
-            <input
-              type="text"
-              className="form-control mb-3"
-              placeholder="Driver ID (number)"
-              value={driverId}
-              onChange={(e) => setDriverId(e.target.value)}
-              required
-              style={{ borderRadius: 12, padding: "0.75rem 1rem" }}
-            />
-          )}
+        <div className="mb-3 text-end">
+          <a href="#" className="text-decoration-none">Forgot password?</a>
+        </div>
 
-          <div className="position-relative mb-2">
-            <input
-              type={showPassword ? "text" : "password"}
-              className="form-control"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ borderRadius: 12, padding: "0.75rem 2.75rem 0.75rem 1rem" }}
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              onClick={() => setShowPassword((s) => !s)}
-              className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
-              style={{ textDecoration: "none" }}
-            >
-              {showPassword ? <i className="fa-solid fa-eye-slash"></i> : <i className="fa-solid fa-eye"></i>}
-            </button>
-          </div>
+        {error && <div className="alert alert-danger py-2">{error}</div>}
 
-          <div className="mb-3 text-end">
-            <a href="#" className="text-decoration-none">Forgot password?</a>
-          </div>
+        <button
+          type="submit"
+          className="btn btn-primary w-100 mb-3"
+        >
+          {submitting ? "Logging in..." : "Login"}
+        </button>
 
-          {error && <div className="alert alert-danger py-2">{error}</div>}
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100 mb-3"
-            style={{ borderRadius: 12, padding: "0.75rem 1rem" }}
-            disabled={submitting}
-          >
-            {submitting ? "Logging in..." : "Login"}
-          </button>
-
-          <p className="text-center mb-0">
-            Not a member? <Link to="/register">Signup now</Link>
-          </p>
-        </form>
-      </div>
+        <p className="text-center mb-0">
+          Not a member? <Link to="/register">Signup now</Link>
+        </p>
+      </form>
     </div>
+  </div>
   );
 };
 

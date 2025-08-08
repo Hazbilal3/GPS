@@ -1,47 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 
-body {
-  font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.auth-page {
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+      1200px 800px at 20% 10%,
+      rgba(59, 163, 255, 0.18),
+      transparent 60%
+    ),
+    linear-gradient(135deg, #0a1524 0%, #102235 60%, #0d1b2a 100%);
 }
 
-.auth-container {
-  background: white;
-  padding: 2rem;
-  border-radius: 15px;
-  max-width: 380px;
+.auth-card {
+  background: var(--brand-white);
+  color: #0e1726;
+  border-radius: 18px;
   width: 100%;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  max-width: 400px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
 }
 
-.role-toggle .toggle-btn {
-  flex: 1;
-  padding: 0.5rem;
-  border-radius: 25px;
-  border: 1px solid #ccc;
-  background: transparent;
-  font-weight: 600;
+.role-toggle .btn {
+  border-radius: 24px;
 }
 
-.role-toggle .toggle-btn.active {
-  background: linear-gradient(90deg, #0052D4, #4364F7);
-  color: white;
+.role-toggle .btn-primary {
+  background: linear-gradient(
+    90deg,
+    var(--brand-primary),
+    var(--brand-primary-dark)
+  );
+  border: 0;
+}
+
+.page {
+  min-height: 100vh;
+  padding: clamp(16px, 3vw, 32px);
+  background: var(--brand-navy);
+}
+
+.page .page-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page h1,
+.page h2,
+.page h3 {
+  color: var(--brand-white);
+}
+.btn-primary {
+  background: linear-gradient(
+    90deg,
+    var(--brand-primary),
+    var(--brand-primary-dark)
+  );
   border: none;
 }
-
-.password-toggle {
-  position: absolute;
-  top: 35%;
-  right: 10px;
-  font-size: 1rem;
-  color: #555;
+.btn-primary:hover {
+  filter: brightness(1.05);
 }
 
-.forgot-link {
-  font-size: 0.9rem;
-  text-decoration: none;
+.form-control {
+  border-radius: 12px !important;
+  padding: 0.8rem 1rem;
 }
