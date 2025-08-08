@@ -1,24 +1,26 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-/** Inline API call (feel free to move to services/authService.ts later) */
-async function loginUser(
-  role: "admin" | "driver",
-  credentials: Record<string, string>
-): Promise<string | null> {
+async function loginUser(credentials: Record<string, any>): Promise<{
+  token: string | null; roleFromApi: number | null;
+}> {
   try {
-    const baseUrl = 'http://localhost:3000/'
-    const res = await fetch( `${baseUrl}auth/login`, {
+    const baseUrl = "http://localhost:3000/";
+    const res = await fetch(`${baseUrl}auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(credentials),
     });
-    if (!res.ok) return null;
+
+    if (!res.ok) return { token: null, roleFromApi: null };
+
     const data = await res.json();
-    console.log(data)
-    return data?.ac ?? null;
+    return {
+      token: data?.accessToken ?? null,
+      roleFromApi: data?.user?.role ?? null,
+    };
   } catch {
-    return null;
+    return { token: null, roleFromApi: null };
   }
 }
 
@@ -34,52 +36,61 @@ const Login: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError(null);
-  setSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
 
-  // Build payload safely so no undefined values exist
-  let payload: Record<string, string> = { password };
-  if (role === "admin") {
-    payload.email = email;
-  } else {
-    payload.driverId = driverId;
-  }
+    // Backend expects: email OR driverId (number), password, userRole (1 admin / 2 driver)
+    const userRole = role === "admin" ? 1 : 2;
+    const payload: Record<string, any> = { password, userRole };
 
-  const token = await loginUser(role, payload);
-  setSubmitting(false);
+    if (role === "admin") {
+      payload.email = email;
+    } else {
+      // backend expects number
+      const idNum = Number(driverId);
+      if (Number.isNaN(idNum)) {
+        setSubmitting(false);
+        setError("Driver ID must be a number.");
+        return;
+      }
+      payload.driverId = idNum;
+    }
 
-//   if (!token) {
-//     setError("Invalid credentials. Please try again.");
-//     return;
-//   }
+    const { token, roleFromApi } = await loginUser(payload);
+    setSubmitting(false);
 
-//   localStorage.setItem("token", token);
-  localStorage.setItem("role", role);
+    if (!token) {
+      setError("Invalid credentials. Please try again.");
+      return;
+    }
 
-  if (role === "admin") {
-    navigate("/dashboard");
-  } else {
-    navigate("/upload");
-  }
-};
+    // Save token + roles (both string + numeric for convenience)
+    localStorage.setItem("token", token);
+    localStorage.setItem("role", role); // "admin" | "driver"
+    if (roleFromApi !== null) localStorage.setItem("roleNum", String(roleFromApi));
 
+    // Redirect
+    if (role === "admin") {
+      navigate("/dashboard");
+    } else {
+      navigate("/upload");
+    }
+  };
 
   return (
     <div className="d-flex align-items-center justify-content-center min-vh-100"
-         style={{ background: "linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC)" }}>
+      style={{ background: "linear-gradient(135deg, #0052D4, #4364F7, #6FB1FC)" }}>
       <div className="bg-white p-4 p-md-5 rounded-4 shadow" style={{ width: "100%", maxWidth: 380 }}>
         <h2 className="text-center fw-bold mb-4">Login Form</h2>
 
-        {/* Role toggle */}
         <div className="d-flex gap-2 mb-3">
           <button
             type="button"
             className={`btn w-100 ${role === "admin" ? "btn-primary" : "btn-outline-secondary"}`}
             style={{ borderRadius: 24 }}
             onClick={() => setRole("admin")}
-            // value={1}
           >
             Admin
           </button>
@@ -88,14 +99,12 @@ const handleSubmit = async (e: React.FormEvent) => {
             className={`btn w-100 ${role === "driver" ? "btn-primary" : "btn-outline-secondary"}`}
             style={{ borderRadius: 24 }}
             onClick={() => setRole("driver")}
-            // value={2}
           >
             Driver
           </button>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* Admin: email, Driver: driverId */}
           {role === "admin" ? (
             <input
               type="email"
@@ -110,7 +119,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             <input
               type="text"
               className="form-control mb-3"
-              placeholder="Driver ID"
+              placeholder="Driver ID (number)"
               value={driverId}
               onChange={(e) => setDriverId(e.target.value)}
               required
@@ -118,7 +127,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             />
           )}
 
-          {/* Password with eye icon */}
           <div className="position-relative mb-2">
             <input
               type={showPassword ? "text" : "password"}
@@ -136,20 +144,15 @@ const handleSubmit = async (e: React.FormEvent) => {
               className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
               style={{ textDecoration: "none" }}
             >
-              {showPassword ? <i className="fa-solid fa-eye"></i> : <i className="fa-solid fa-eye-slash"></i>}
+              {showPassword ? <i className="fa-solid fa-eye-slash"></i> : <i className="fa-solid fa-eye"></i>}
             </button>
           </div>
 
-          {/* Forgot password (login only) */}
           <div className="mb-3 text-end">
             <a href="#" className="text-decoration-none">Forgot password?</a>
           </div>
 
-          {error && (
-            <div className="alert alert-danger py-2" role="alert">
-              {error}
-            </div>
-          )}
+          {error && <div className="alert alert-danger py-2">{error}</div>}
 
           <button
             type="submit"
