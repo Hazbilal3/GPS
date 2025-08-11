@@ -11,6 +11,8 @@ const COLUMNS = [
   "Google Maps Link",
 ];
 
+const BASE_URL = "http://localhost:3000/"; 
+
 const FileUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -20,7 +22,7 @@ const FileUploadForm: React.FC = () => {
 
   const handleFileDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
+    const droppedFile = e.dataTransfer.files?.[0];
     validateAndSetFile(droppedFile);
   };
 
@@ -29,28 +31,25 @@ const FileUploadForm: React.FC = () => {
     validateAndSetFile(selectedFile);
   };
 
-  const validateAndSetFile = (selectedFile: File | undefined) => {
+  const validateAndSetFile = (selectedFile?: File) => {
     if (!selectedFile) return;
-    if (isExcelFile(selectedFile)) {
+    if (isCsvOrExcel(selectedFile)) {
       setFile(selectedFile);
       setStatus(null);
     } else {
-      setStatus("❌ Invalid file format. Please upload .csv or Excel files.");
+      setStatus("❌ Invalid file format. Please upload a .csv or Excel file.");
       setFile(null);
     }
   };
 
-  const isExcelFile = (file: File) => {
+  const isCsvOrExcel = (f: File) => {
     const validTypes = [
+      "text/csv",
       "application/vnd.ms-excel",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "text/csv",
     ];
-    const extension = file.name.split(".").pop()?.toLowerCase();
-    return (
-      validTypes.includes(file.type) ||
-      ["csv", "xlsx", "xls"].includes(extension || "")
-    );
+    const ext = f.name.split(".").pop()?.toLowerCase();
+    return validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "");
   };
 
   const handleRemoveFile = (e?: React.MouseEvent) => {
@@ -67,130 +66,145 @@ const FileUploadForm: React.FC = () => {
       return;
     }
 
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setStatus("❌ Not authorized. Please log in first.");
+      return;
+    }
+
     const formData = new FormData();
+    // IMPORTANT: field name must be 'file' to match FileInterceptor('file')
     formData.append("file", file);
 
     setStatus("Uploading...");
-    const port = "http://localhost:3000/";
-
     try {
-      const res = await fetch(port + "upload", {
+      const res = await fetch(`${BASE_URL}upload`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`, // DO NOT set Content-Type for FormData
+        },
         body: formData,
       });
 
-      if (res.ok) {
-        const result = await res.json();
-        setResponse(result);
-        setShowModal(true);
-        setStatus(null);
-        setFile(null);
-        if (inputRef.current) inputRef.current.value = "";
-      } else {
-        setStatus("❌ Upload failed.");
+      if (!res.ok) {
+        // try to read backend message if available
+        let msg = "❌ Upload failed.";
+        try {
+          const j = await res.json();
+          if (j?.message) msg = `❌ ${Array.isArray(j.message) ? j.message.join(", ") : j.message}`;
+        } catch { /* ignore */ }
+        setStatus(msg);
+        return;
       }
-    } catch (error: any) {
-      setStatus("❌ " + error.message || "Network error.");
+
+      // backend returns { message, count }, but per your ask we don't show raw response.
+      // We show a success modal, clear input, and optionally keep response table hidden.
+      setShowModal(true);
+      setStatus(null);
+      setResponse([]); // keep empty unless you later want to render processed rows
+      setFile(null);
+      if (inputRef.current) inputRef.current.value = "";
+    } catch (err: any) {
+      setStatus(`❌ ${err?.message || "Network error."}`);
     }
   };
 
   return (
-    <>
+    <div className="page">
+      <div className="page-inner">
+        <form className="upload-wrapper card-surface p-4" onSubmit={handleSubmit}>
+          {/* Drop Area */}
+          <div
+            className="drop-area"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleFileDrop}
+          >
+            <img
+              src="https://img.icons8.com/color/48/google-sheets.png"
+              alt="excel"
+              className="upload-icon"
+            />
+            <p className="upload-title">Select a CSV/Excel file to import</p>
+            <p className="upload-subtitle">or drag and drop it here</p>
+            <input
+              type="file"
+              ref={inputRef}
+              accept=".csv, .xlsx, .xls"
+              onChange={handleFileChange}
+              hidden
+            />
+            {file && (
+              <div className="file-preview">
+                <p className="file-name-preview">📄 {file.name}</p>
+                <span className="remove-file" onClick={handleRemoveFile}>
+                  ×
+                </span>
+              </div>
+            )}
+          </div>
 
-      <form className="upload-wrapper">
-        {/* Drop Area */}
-        <div
-          className="drop-area"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleFileDrop}
-        >
-          <img
-            src="https://img.icons8.com/color/48/google-sheets.png"
-            alt="excel"
-            className="upload-icon"
-          />
-          <p className="upload-title">Select a CSV/Excel file to import</p>
-          <p className="upload-subtitle">or drag and drop it here</p>
-          <input
-            type="file"
-            ref={inputRef}
-            accept=".csv, .xlsx, .xls"
-            onChange={handleFileChange}
-            hidden
-          />
-          {file && (
-            <div className="file-preview">
-              <p className="file-name-preview">📄 {file.name}</p>
-              <span className="remove-file" onClick={handleRemoveFile}>
-                ×
-              </span>
+          {/* Upload Button */}
+          <button type="submit" className="submit-btn">
+            Upload
+          </button>
+
+          {/* Status */}
+          {status && <div className="upload-status">{status}</div>}
+
+          {/* Success Modal */}
+          {showModal && (
+            <div className="modal-overlay" onClick={() => setShowModal(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <h3>✅ Upload Successful</h3>
+                <p>Your file has been uploaded and will be processed.</p>
+                <button className="close-btn" onClick={() => setShowModal(false)}>
+                  Close
+                </button>
+              </div>
             </div>
           )}
-        </div>
+        </form>
 
-        {/* Upload Button */}
-        <button type="submit" className="submit-btn" onClick={handleSubmit}>
-          Upload
-        </button>
-
-        {/* Status */}
-        {status && <div className="upload-status">{status}</div>}
-
-        {/* Modal */}
-        {showModal && (
-          <div className="modal-overlay" onClick={() => setShowModal(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <h3>✅ Upload Successful</h3>
-              <p>Your file has been uploaded successfully.</p>
-              <button className="close-btn" onClick={() => setShowModal(false)}>
-                Close
-              </button>
+        {/* Table (kept but hidden unless you populate `response`) */}
+        {Array.isArray(response) && response.length > 0 && (
+          <div className="response-table-wrapper">
+            <h4>📋 Uploaded Records</h4>
+            <div className="table-scroll-container">
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    {COLUMNS.map((col) => (
+                      <th key={col}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {response.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {COLUMNS.map((col, colIndex) => {
+                        const value = row[col] ?? "";
+                        if (col === "Google Maps Link" && value) {
+                          return (
+                            <td key={colIndex}>
+                              <a href={value} target="_blank" rel="noopener noreferrer">
+                                View Map
+                              </a>
+                            </td>
+                          );
+                        }
+                        return <td key={colIndex}>{String(value)}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
-      </form>
-
-      {/* Table */}
-      {Array.isArray(response) && response.length > 0 && (
-        <div className="response-table-wrapper">
-          <h4>📋 Uploaded Records</h4>
-          <div className="table-scroll-container">
-            <table className="styled-table">
-              <thead>
-                <tr>
-                  {COLUMNS.map((col) => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {response.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {COLUMNS.map((col, colIndex) => {
-                      const value = row[col] ?? "";
-                      // Make Google Maps Link clickable
-                      if (col === "Google Maps Link" && value) {
-                        return (
-                          <td key={colIndex}>
-                            <a href={value} target="_blank" rel="noopener noreferrer">
-                              View Map
-                            </a>
-                          </td>
-                        );
-                      }
-                      return <td key={colIndex}>{String(value)}</td>;
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-    </>
-  );  
+      </div>
+    </div>
+  );
 };
 
 export default FileUploadForm;
