@@ -1,5 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=swap");
 
+body, input, button, select, textarea {
+  font-family: 'Inter Tight', sans-serif;
+}
+
 .auth-onepage {
   min-height: 100vh;
   position: relative;
@@ -134,3 +138,35 @@
     max-width: 420px;
   }
 }
+
+/* ------------------ */
+
+.auth-stack--wide {
+  max-width: 860px;               
+}
+
+
+.auth-stack--wide .stack-form .form-control {
+  padding: 0.9rem 1rem;
+}
+
+
+.grid-2 { display: grid; gap: 24px; }
+@media (min-width: 768px) {
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+}
+
+.corner-illus {
+  position: absolute;
+  top: -24px;
+  right: 174px;
+  width: clamp(240px, 19vw, 350px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .auth-stack--wide { max-width: 520px; }  
+}
+
