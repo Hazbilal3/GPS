@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import cmjlLogo from "../assets/pics/bg-logo.png"; 
+import illoLeft from "../assets/pics/left-login-img.png"; 
+import illoRight from "../assets/pics/right-login-img.png"; 
 
 async function loginUser(
   credentials: Record<string, any>
@@ -78,83 +81,84 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h2 className="text-center fw-bold mb-4">Login Form</h2>
+    <div className="auth-onepage">
+      <img src={illoLeft} alt="" className="bg-illus bg-illus--left" />
+      <img src={illoRight} alt="" className="bg-illus bg-illus--right" />
 
-        <div className="d-flex gap-2 mb-3 role-toggle">
-          <button
-            type="button"
-            className={`btn w-100 ${
-              role === "admin" ? "btn-primary" : "btn-outline-secondary"
-            }`}
-            onClick={() => setRole("admin")}
-          >
+
+      <div className="auth-stack">
+        <img src={cmjlLogo} className="stack-logo" alt="CMJL" />
+        <h1 className="stack-title">Welcome back</h1>
+
+        <div className="role-switch" role="group" aria-label="Select role">
+          <span className={`switch-label ${role === "admin" ? "active" : ""}`}>
             Admin
-          </button>
-          <button
-            type="button"
-            className={`btn w-100 ${
-              role === "driver" ? "btn-primary" : "btn-outline-secondary"
-            }`}
-            onClick={() => setRole("driver")}
-          >
+          </span>
+          <label className="switch">
+            <input
+              type="checkbox"
+              checked={role === "driver"}
+              onChange={(e) => setRole(e.target.checked ? "driver" : "admin")}
+              aria-label="Toggle role"
+            />
+            <span className="slider" />
+          </label>
+          <span className={`switch-label ${role === "driver" ? "active" : ""}`}>
             Driver
-          </button>
+          </span>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} className="stack-form" noValidate>
           {role === "admin" ? (
             <>
+              <label className="form-label">Email address</label>
               <input
                 type="email"
-                className={`form-control mb-1 ${
+                className={`form-control ${
                   fieldErrors.email ? "is-invalid" : ""
                 }`}
-                placeholder="Email Address"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
               {fieldErrors.email && (
-                <div className="text-danger small mb-2">
-                  {fieldErrors.email}
-                </div>
+                <div className="text-danger small">{fieldErrors.email}</div>
               )}
             </>
           ) : (
             <>
+              <label className="form-label">Driver ID</label>
               <input
                 type="text"
-                className={`form-control mb-1 ${
+                className={`form-control ${
                   fieldErrors.driverId ? "is-invalid" : ""
                 }`}
-                placeholder="Driver ID (number)"
+                placeholder="Enter your Driver ID"
                 value={driverId}
                 onChange={(e) => setDriverId(e.target.value)}
               />
               {fieldErrors.driverId && (
-                <div className="text-danger small mb-2">
-                  {fieldErrors.driverId}
-                </div>
+                <div className="text-danger small">{fieldErrors.driverId}</div>
               )}
             </>
           )}
 
-          <div className="position-relative mb-1">
+          <label className="form-label mt-2">Password</label>
+          <div className="position-relative">
             <input
               type={showPassword ? "text" : "password"}
               className={`form-control ${
                 fieldErrors.password ? "is-invalid" : ""
               }`}
-              placeholder="Password"
+              placeholder="Enter the Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <button
               type="button"
+              className="btn btn-link eye-btn"
               onClick={() => setShowPassword((s) => !s)}
-              className="btn btn-link position-absolute top-50 translate-middle-y end-0 pe-3"
-              style={{ textDecoration: "none" }}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
                 <i className="fa-solid fa-eye"></i>
@@ -164,10 +168,10 @@ const Login: React.FC = () => {
             </button>
           </div>
           {fieldErrors.password && (
-            <div className="text-danger small mb-2">{fieldErrors.password}</div>
+            <div className="text-danger small">{fieldErrors.password}</div>
           )}
 
-          <div className="mb-3 text-end">
+          <div className="mt-2 mb-3 text-end">
             <a href="#" className="text-decoration-none">
               Forgot password?
             </a>
@@ -177,13 +181,13 @@ const Login: React.FC = () => {
 
           <button
             type="submit"
-            className="btn btn-primary w-100 mb-3"
+            className="btn btn-primary w-100"
             disabled={submitting}
           >
             {submitting ? "Logging in..." : "Login"}
           </button>
 
-          <p className="text-center mb-0">
+          <p className="text-center mb-0 mt-3">
             Not a member? <Link to="/register">Signup now</Link>
           </p>
         </form>
