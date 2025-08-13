@@ -72,7 +72,12 @@ body, input, button, select, textarea {
   transition: background 0.2s ease;
 }
 .slider::before {
-  content: "";
+  content: "\f508"; 
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   left: 3px;
   top: 3px;
@@ -80,16 +85,18 @@ body, input, button, select, textarea {
   height: 22px;
   border-radius: 50%;
   background: #1f73d6;
+  color: #fff;
+  font-size: 12px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, content 0.2s ease;
 }
 .switch input:checked + .slider {
   background: #fff;
 }
 .switch input:checked + .slider::before {
   transform: translateX(26px);
+  content: "\f0d1"; 
 }
-
 .stack-form .form-label {
   font-size: 17px;
   font-weight: 500;
@@ -170,3 +177,11 @@ body, input, button, select, textarea {
   .auth-stack--wide { max-width: 520px; }  
 }
 
+p.text-center a {
+  text-decoration: none;
+  color: #007bff; 
+}
+
+p.text-center a:hover {
+  text-decoration: underline; 
+}

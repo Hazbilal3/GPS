@@ -1,4 +1,10 @@
-import React, { useState, useRef, type ChangeEvent, type DragEvent } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  type ChangeEvent,
+  type DragEvent,
+} from "react";
 import "../assets/components-css/FileUploadForm.css";
 
 const COLUMNS = [
@@ -11,7 +17,7 @@ const COLUMNS = [
   "Google Maps Link",
 ];
 
-const BASE_URL = "http://localhost:3000/"; 
+const BASE_URL = "http://localhost:3000/";
 
 const FileUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -19,6 +25,13 @@ const FileUploadForm: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [response, setResponse] = useState<any[]>([]);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = showModal ? "hidden" : prev || "";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showModal]);
 
   const handleFileDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -49,7 +62,9 @@ const FileUploadForm: React.FC = () => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
     const ext = f.name.split(".").pop()?.toLowerCase();
-    return validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "");
+    return (
+      validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "")
+    );
   };
 
   const handleRemoveFile = (e?: React.MouseEvent) => {
@@ -73,7 +88,6 @@ const FileUploadForm: React.FC = () => {
     }
 
     const formData = new FormData();
-    // IMPORTANT: field name must be 'file' to match FileInterceptor('file')
     formData.append("file", file);
 
     setStatus("Uploading...");
@@ -87,21 +101,23 @@ const FileUploadForm: React.FC = () => {
       });
 
       if (!res.ok) {
-        // try to read backend message if available
         let msg = "❌ Upload failed.";
         try {
           const j = await res.json();
-          if (j?.message) msg = `❌ ${Array.isArray(j.message) ? j.message.join(", ") : j.message}`;
-        } catch { /* ignore */ }
+          if (j?.message)
+            msg = `❌ ${
+              Array.isArray(j.message) ? j.message.join(", ") : j.message
+            }`;
+        } catch {
+          /* ignore */
+        }
         setStatus(msg);
         return;
       }
 
-      // backend returns { message, count }, but per your ask we don't show raw response.
-      // We show a success modal, clear input, and optionally keep response table hidden.
       setShowModal(true);
       setStatus(null);
-      setResponse([]); // keep empty unless you later want to render processed rows
+      setResponse([]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: any) {
@@ -112,8 +128,7 @@ const FileUploadForm: React.FC = () => {
   return (
     <div className="page">
       <div className="page-inner">
-        <form className="upload-wrapper card-surface p-4" onSubmit={handleSubmit}>
-          {/* Drop Area */}
+        <form className="upload-wrapper  p-4" onSubmit={handleSubmit}>
           <div
             className="drop-area"
             onClick={() => inputRef.current?.click()}
@@ -144,21 +159,32 @@ const FileUploadForm: React.FC = () => {
             )}
           </div>
 
-          {/* Upload Button */}
           <button type="submit" className="submit-btn">
             Upload
           </button>
 
-          {/* Status */}
           {status && <div className="upload-status">{status}</div>}
 
-          {/* Success Modal */}
           {showModal && (
-            <div className="modal-overlay" onClick={() => setShowModal(false)}>
-              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <h3>✅ Upload Successful</h3>
+            <div
+              className="modal-overlay"
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setShowModal(false)}
+            >
+              <div
+                className="modal-content modal-success"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="modal-icon" aria-hidden="true">
+                  ✓
+                </div>
+                <h3>Upload Successful</h3>
                 <p>Your file has been uploaded and will be processed.</p>
-                <button className="close-btn" onClick={() => setShowModal(false)}>
+                <button
+                  className="close-btn close-btn--primary"
+                  onClick={() => setShowModal(false)}
+                >
                   Close
                 </button>
               </div>
@@ -166,7 +192,6 @@ const FileUploadForm: React.FC = () => {
           )}
         </form>
 
-        {/* Table (kept but hidden unless you populate `response`) */}
         {Array.isArray(response) && response.length > 0 && (
           <div className="response-table-wrapper">
             <h4>📋 Uploaded Records</h4>
@@ -187,7 +212,11 @@ const FileUploadForm: React.FC = () => {
                         if (col === "Google Maps Link" && value) {
                           return (
                             <td key={colIndex}>
-                              <a href={value} target="_blank" rel="noopener noreferrer">
+                              <a
+                                href={value}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
                                 View Map
                               </a>
                             </td>
