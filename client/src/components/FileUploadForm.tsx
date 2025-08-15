@@ -17,7 +17,7 @@ const COLUMNS = [
   "Google Maps Link",
 ];
 
-const BASE_URL = "http://localhost:3000/";
+const BASE_URL = "http://localhost:3006/";
 
 const FileUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -74,38 +74,36 @@ const FileUploadForm: React.FC = () => {
     setStatus(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
       setStatus("Please select a file.");
       return;
     }
-
     const token = localStorage.getItem("token");
+    const driverId = localStorage.getItem("driverId");
     if (!token) {
-      setStatus("❌ Not authorized. Please log in first.");
+      setStatus(":x: Not authorized. Please log in first.");
       return;
     }
-
     const formData = new FormData();
     formData.append("file", file);
-
+    formData.append("driverId", driverId);
     setStatus("Uploading...");
     try {
-      const res = await fetch(`${BASE_URL}upload`, {
+      const res = await fetch(`${BASE_URL}uploads`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`, // DO NOT set Content-Type for FormData
         },
         body: formData,
       });
-
       if (!res.ok) {
-        let msg = "❌ Upload failed.";
+        let msg = ":x: Upload failed.";
         try {
           const j = await res.json();
           if (j?.message)
-            msg = `❌ ${
+            msg = `:x: ${
               Array.isArray(j.message) ? j.message.join(", ") : j.message
             }`;
         } catch {
@@ -114,14 +112,13 @@ const FileUploadForm: React.FC = () => {
         setStatus(msg);
         return;
       }
-
       setShowModal(true);
       setStatus(null);
       setResponse([]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: any) {
-      setStatus(`❌ ${err?.message || "Network error."}`);
+      setStatus(`:x: ${err?.message || "Network error."}`);
     }
   };
 

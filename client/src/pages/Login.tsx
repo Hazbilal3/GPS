@@ -8,7 +8,7 @@ async function loginUser(
   credentials: Record<string, any>
 ): Promise<{ token: string | null; roleFromApi: number | null }> {
   try {
-    const baseUrl = "http://localhost:3000/";
+    const baseUrl = "http://localhost:3006/";
     const res = await fetch(`${baseUrl}auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -58,23 +58,20 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError(null);
     if (!validateForm()) return;
-
     setSubmitting(true);
     const userRole = role === "admin" ? 1 : 2;
     const payload: Record<string, any> = { password, userRole };
     if (role === "admin") payload.email = email;
     else payload.driverId = Number(driverId);
-
     const { token, roleFromApi } = await loginUser(payload);
     setSubmitting(false);
-
     if (!token) {
       setError("Invalid credentials. Please try again.");
       return;
     }
-
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
+    localStorage.setItem("driverId", driverId);
     if (roleFromApi !== null)
       localStorage.setItem("roleNum", String(roleFromApi));
     navigate(role === "admin" ? "/dashboard" : "/upload");
