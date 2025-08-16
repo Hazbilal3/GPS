@@ -7,16 +7,6 @@ import React, {
 } from "react";
 import "../assets/components-css/FileUploadForm.css";
 
-const COLUMNS = [
-  "Barcode",
-  "Address",
-  "GPS Location",
-  "Expected Location",
-  "Distance (km)",
-  "Status",
-  "Google Maps Link",
-];
-
 const BASE_URL = "http://localhost:3006/";
 
 const FileUploadForm: React.FC = () => {
@@ -24,7 +14,6 @@ const FileUploadForm: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [response, setResponse] = useState<any[]>([]);
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = showModal ? "hidden" : prev || "";
@@ -74,7 +63,7 @@ const FileUploadForm: React.FC = () => {
     setStatus(null);
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) {
       setStatus("Please select a file.");
@@ -88,7 +77,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("driverId", driverId);
+    formData.append("driverId", String(driverId ?? ""));
     setStatus("Uploading...");
     try {
       const res = await fetch(`${BASE_URL}uploads`, {
@@ -114,7 +103,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
       setShowModal(true);
       setStatus(null);
-      setResponse([]);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: any) {
@@ -188,46 +176,6 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
           )}
         </form>
-
-        {Array.isArray(response) && response.length > 0 && (
-          <div className="response-table-wrapper">
-            <h4>📋 Uploaded Records</h4>
-            <div className="table-scroll-container">
-              <table className="styled-table">
-                <thead>
-                  <tr>
-                    {COLUMNS.map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {response.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
-                      {COLUMNS.map((col, colIndex) => {
-                        const value = row[col] ?? "";
-                        if (col === "Google Maps Link" && value) {
-                          return (
-                            <td key={colIndex}>
-                              <a
-                                href={value}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View Map
-                              </a>
-                            </td>
-                          );
-                        }
-                        return <td key={colIndex}>{String(value)}</td>;
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

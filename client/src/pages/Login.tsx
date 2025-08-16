@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import cmjlLogo from "../assets/pics/bg-logo.png"; 
-import illoLeft from "../assets/pics/left-login-img.png"; 
-import illoRight from "../assets/pics/right-login-img.png"; 
+import cmjlLogo from "../assets/pics/bg-logo.png";
+import illoLeft from "../assets/pics/left-login-img.png";
+import illoRight from "../assets/pics/right-login-img.png";
 
 async function loginUser(
   credentials: Record<string, any>
@@ -81,7 +81,6 @@ const Login: React.FC = () => {
     <div className="auth-onepage">
       <img src={illoLeft} alt="" className="bg-illus bg-illus--left" />
       <img src={illoRight} alt="" className="bg-illus bg-illus--right" />
-
 
       <div className="auth-stack">
         <img src={cmjlLogo} className="stack-logo" alt="CMJL" />
