@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { listDrivers, createDriver, updateDriver, type Driver } from "../services/adminApi";
+import React, { useEffect, useMemo, useState } from "react";
+import AdminLayout from "../shareable/AdminLayout";
+import {
+  listDrivers,
+  createDriver,
+  updateDriver,
+  type Driver,
+} from "../services/adminApi";
 
 const DriversPage: React.FC = () => {
+  const token = useMemo(() => localStorage.getItem("token") ?? "", []);
+
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Driver | null>(null);
-
-  const token = localStorage.getItem("token") ?? "";
 
   async function load() {
     try {
@@ -25,6 +31,7 @@ const DriversPage: React.FC = () => {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function openAdd() {
@@ -40,12 +47,43 @@ const DriversPage: React.FC = () => {
     e.preventDefault();
     const form = e.currentTarget as HTMLFormElement;
     const fd = new FormData(form);
+
     const payload: any = {
       driverId: Number(fd.get("driverId") || 0),
-      fullName: fd.get("fullName") || "",
-      email: fd.get("email") || "",
-      phoneNumber: fd.get("phoneNumber") || "",
+      fullName: fd.get("fullName")?.toString().trim() || "",
+      email: fd.get("email")?.toString().trim() || "",
+      phoneNumber: fd.get("phoneNumber")?.toString().trim() || "",
     };
+
+    // password only when creating a new driver
+    if (!editing) {
+      payload.password = fd.get("password")?.toString().trim() || "";
+    }
+
+    // ✅ Validation
+    if (!payload.driverId || isNaN(payload.driverId)) {
+      return alert("Driver ID is required and must be numeric.");
+    }
+    if (!payload.fullName) {
+      return alert("Full Name is required.");
+    }
+    if (!payload.phoneNumber || isNaN(Number(payload.phoneNumber))) {
+      return alert("Phone number is required and must be numeric.");
+    }
+    if (!payload.email || !/\S+@\S+\.\S+/.test(payload.email)) {
+      return alert("Valid email is required.");
+    }
+    if (!editing) {
+      if (
+        !payload.password ||
+        !/^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(payload.password)
+      ) {
+        return alert(
+          "Password must be at least 8 characters and include a number and a special character."
+        );
+      }
+    }
+
     try {
       if (editing?.id) {
         await updateDriver(editing.id, payload, token);
@@ -61,9 +99,9 @@ const DriversPage: React.FC = () => {
   }
 
   return (
-    <div className="container-fluid py-3">
+    <AdminLayout title="Drivers">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2 className="mb-0">Drivers</h2>
+        <div />
         <button className="btn btn-primary" onClick={openAdd}>
           + Add Driver
         </button>
@@ -71,10 +109,10 @@ const DriversPage: React.FC = () => {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {loading ? (
-        <div>Loading...</div>
+        <div className="card p-3">Loading...</div>
       ) : (
-        <div className="table-responsive card-surface p-3">
-          <table className="table table-dark table-striped align-middle mb-0">
+        <div className="table-responsive card p-3">
+          <table className="table table-borderless align-middle mb-0 custom-table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -82,7 +120,7 @@ const DriversPage: React.FC = () => {
                 <th>Full Name</th>
                 <th>Email</th>
                 <th>Phone Number</th>
-                <th></th>
+                <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -95,7 +133,7 @@ const DriversPage: React.FC = () => {
                   <td>{d.phoneNumber || "-"}</td>
                   <td className="text-end">
                     <button
-                      className="btn btn-sm btn-outline-primary me-2"
+                      className="btn btn-sm btn-outline-primary"
                       onClick={() => openEdit(d)}
                     >
                       Edit
@@ -115,6 +153,7 @@ const DriversPage: React.FC = () => {
         </div>
       )}
 
+      {/* Add/Edit Modal */}
       {showForm && (
         <div
           className="modal d-block"
@@ -147,21 +186,12 @@ const DriversPage: React.FC = () => {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Email</label>
-                      <input
-                        name="email"
-                        type="email"
-                        className="form-control"
-                        defaultValue={String(editing?.email ?? "")}
-                      />
-                    </div>
-                    <div className="col-md-6">
                       <label className="form-label">Full Name</label>
                       <input
                         name="fullName"
                         type="text"
                         className="form-control"
-                        defaultValue={String((editing as any)?.fullName ?? "")}
+                        defaultValue={String(editing?.fullName ?? "")}
                       />
                     </div>
                     <div className="col-md-6">
@@ -170,11 +200,29 @@ const DriversPage: React.FC = () => {
                         name="phoneNumber"
                         type="text"
                         className="form-control"
-                        defaultValue={String(
-                          (editing as any)?.phoneNumber ?? ""
-                        )}
+                        defaultValue={String(editing?.phoneNumber ?? "")}
                       />
                     </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Email</label>
+                      <input
+                        name="email"
+                        type="email"
+                        className="form-control"
+                        defaultValue={String(editing?.email ?? "")}
+                      />
+                    </div>
+                    {!editing && (
+                      <div className="col-md-12">
+                        <label className="form-label">Password</label>
+                        <input
+                          name="password"
+                          type="password"
+                          className="form-control"
+                          placeholder="Enter password"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="modal-footer">
@@ -194,7 +242,7 @@ const DriversPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };
 
