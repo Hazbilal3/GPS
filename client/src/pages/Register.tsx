@@ -5,7 +5,7 @@ import cornerArt from "../assets/pics/Signup-img.png";
 
 async function registerUser(payload: Record<string, any>): Promise<boolean> {
   try {
-    const baseUrl = "http://localhost:3006/";
+    const baseUrl = "http://localhost:3008/";
     const res = await fetch(`${baseUrl}auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -31,6 +31,8 @@ const Register: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [adminId, setAdminId] = useState("");
+  const [phone, setPhone] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,19 +42,30 @@ const Register: React.FC = () => {
     const errs: Record<string, string> = {};
 
     if (role === "admin") {
-      if (!firstname.trim()) errs.firstname = "First name is required.";
-      if (!lastname.trim()) errs.lastname = "Last name is required.";
+      if (!adminId.trim()) errs.adminId = "Admin ID is required.";
+      if (!firstname.trim()) errs.firstname = "Full name is required.";
+      if (!lastname.trim()) errs.lastname = "Phone number is required.";
+      else if (isNaN(Number(lastname)))
+        errs.lastname = "Phone number must be numeric.";
     } else {
       if (!driverId.trim()) errs.driverId = "Driver ID is required.";
       else if (isNaN(Number(driverId)))
         errs.driverId = "Driver ID must be a number.";
+
       if (!fullName.trim()) errs.fullName = "Full name is required.";
+
+      if (!phone.trim()) errs.phone = "Phone number is required.";
+      else if (isNaN(Number(phone)))
+        errs.phone = "Phone number must be numeric.";
     }
 
     if (!email.trim()) errs.email = "Email is required.";
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = "Invalid email format.";
 
     if (!password.trim()) errs.password = "Password is required.";
+    else if (!/^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password))
+      errs.password =
+        "Password must be at least 8 characters and include a number and a special character.";
 
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
@@ -69,25 +82,21 @@ const Register: React.FC = () => {
 
     if (role === "admin") {
       payload = {
-        driverId: 0,
-        firstname,
-        lastname,
         email,
         password,
         userRole: 1,
+        adminId: Number(adminId),
+        fullName: firstname,
+        phoneNumber: Number(lastname),
       };
     } else {
-      const parts = fullName.trim().split(/\s+/);
-      const first = parts.shift() || "";
-      const last = parts.join(" ") || "-";
-
       payload = {
-        driverId: Number(driverId),
-        firstname: first,
-        lastname: last,
         email,
         password,
         userRole: 2,
+        driverId: Number(driverId),
+        fullName: fullName,
+        phoneNumber: Number(phone),
       };
     }
 
@@ -128,18 +137,54 @@ const Register: React.FC = () => {
           </span>
         </div>
 
+        {role === "admin" ? (
+          <div className="mb-3" style={{ maxWidth: 420, margin: "0 auto" }}>
+            <label className="form-label">Admin ID</label>
+            <input
+              type="text"
+              className={`form-control ${
+                fieldErrors.adminId ? "is-invalid" : ""
+              }`}
+              placeholder="Enter your Admin ID"
+              style={{ padding: "0.75rem 1rem", borderRadius: "12px" }}
+              value={adminId}
+              onChange={(e) => setAdminId(e.target.value)}
+            />
+            {fieldErrors.adminId && (
+              <div className="text-danger small">{fieldErrors.adminId}</div>
+            )}
+          </div>
+        ) : (
+          <div className="mb-3" style={{ maxWidth: 420, margin: "0 auto" }}>
+            <label className="form-label">Driver ID</label>
+            <input
+              type="text"
+              className={`form-control ${
+                fieldErrors.driverId ? "is-invalid" : ""
+              }`}
+              placeholder="Enter your Driver ID"
+              style={{ padding: "0.75rem 1rem", borderRadius: "12px" }}
+              value={driverId}
+              onChange={(e) => setDriverId(e.target.value)}
+            />
+            {fieldErrors.driverId && (
+              <div className="text-danger small">{fieldErrors.driverId}</div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleRegister} className="stack-form" noValidate>
           <div className="grid-2">
             {role === "admin" ? (
               <>
                 <div>
-                  <label className="form-label">First name</label>
+                  <label className="form-label">Full name</label>
                   <input
                     type="text"
                     className={`form-control ${
                       fieldErrors.firstname ? "is-invalid" : ""
                     }`}
-                    placeholder="Enter your First Name"
+                    placeholder="Enter your Full Name"
                     value={firstname}
                     onChange={(e) => setFirstname(e.target.value)}
                   />
@@ -151,13 +196,13 @@ const Register: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="form-label">Last name</label>
+                  <label className="form-label">Phone number</label>
                   <input
                     type="text"
                     className={`form-control ${
                       fieldErrors.lastname ? "is-invalid" : ""
                     }`}
-                    placeholder="Enter Your Last Name"
+                    placeholder="Enter your Phone Number"
                     value={lastname}
                     onChange={(e) => setLastname(e.target.value)}
                   />
@@ -170,24 +215,6 @@ const Register: React.FC = () => {
               </>
             ) : (
               <>
-                <div>
-                  <label className="form-label">Driver ID</label>
-                  <input
-                    type="text"
-                    className={`form-control ${
-                      fieldErrors.driverId ? "is-invalid" : ""
-                    }`}
-                    placeholder="Enter your Driver ID"
-                    value={driverId}
-                    onChange={(e) => setDriverId(e.target.value)}
-                  />
-                  {fieldErrors.driverId && (
-                    <div className="text-danger small">
-                      {fieldErrors.driverId}
-                    </div>
-                  )}
-                </div>
-
                 <div>
                   <label className="form-label">Full name</label>
                   <input
@@ -203,6 +230,22 @@ const Register: React.FC = () => {
                     <div className="text-danger small">
                       {fieldErrors.fullName}
                     </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="form-label">Phone number</label>
+                  <input
+                    type="tel"
+                    className={`form-control ${
+                      fieldErrors.phone ? "is-invalid" : ""
+                    }`}
+                    placeholder="Enter your Phone Number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  {fieldErrors.phone && (
+                    <div className="text-danger small">{fieldErrors.phone}</div>
                   )}
                 </div>
               </>

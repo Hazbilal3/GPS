@@ -58,7 +58,7 @@ const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const BASE_URL =
-      import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3006";
+      import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008";
     const run = async () => {
       try {
         const res = await fetch(`${BASE_URL}/drivers`, {
@@ -70,11 +70,16 @@ const AdminDashboard: React.FC = () => {
           .map((d: any) => {
             const idNum = Number(d.id ?? d.userId ?? d.driverId);
             if (Number.isNaN(idNum)) return null;
-            const name =
-              d.firstname || d.firstName || d.name || d.email || String(idNum);
-            return { id: idNum, label: `${name} (${idNum})` };
+
+            const fullName = d.fullName || "";
+
+            return {
+              id: idNum,
+              label: `${fullName} (${idNum})`,
+            };
           })
           .filter(Boolean) as DriverOption[];
+
         setDrivers(opts);
       } catch (e) {
         console.error(e);

@@ -8,7 +8,7 @@ export type DriverReportRow = {
   mapsUrl?: string;
 };
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3006";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008";
 
 export async function getDriverReport(opts: {
   driverId: number;
@@ -24,7 +24,6 @@ export async function getDriverReport(opts: {
   url.searchParams.set("page", String(page));
   url.searchParams.set("limit", String(limit ?? 20));
   url.searchParams.set("date", date ?? "");
-
 
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
@@ -74,7 +73,7 @@ export async function exportDriverReport(opts: {
 
   const url = new URL(
     "/report/export",
-    import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3006"
+    import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008"
   );
   url.searchParams.set("driverId", String(driverId));
   url.searchParams.set("date", date);
@@ -94,4 +93,71 @@ export async function exportDriverReport(opts: {
   }
 
   return await res.blob();
+}
+
+export type Driver = {
+  id?: number;
+  driverId?: number | string;
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string | number;
+};
+
+export async function listDrivers(token: string): Promise<Driver[]> {
+  const res = await fetch(`${BASE_URL}/drivers`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch drivers (${res.status})`);
+  const data = await res.json();
+
+  const raw: any[] = Array.isArray(data) ? data : data?.data ?? [];
+  return raw.map((d: any) => ({
+    id: d.id,
+    driverId: d.driverId,
+    fullName: d.fullName,
+    email: d.email,
+    phoneNumber: d.phoneNumber,
+  }));
+}
+
+export async function createDriver(payload: Driver, token: string) {
+  const res = await fetch(`${BASE_URL}/drivers`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let msg = `Create failed (${res.status})`;
+    try {
+      const j = await res.json();
+      if (j?.message)
+        msg = Array.isArray(j.message) ? j.message.join(", ") : j.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  return await res.json();
+}
+
+export async function updateDriver(id: number, payload: Driver, token: string) {
+  const res = await fetch(`${BASE_URL}/drivers/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let msg = `Update failed (${res.status})`;
+    try {
+      const j = await res.json();
+      if (j?.message)
+        msg = Array.isArray(j.message) ? j.message.join(", ") : j.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  return await res.json();
 }

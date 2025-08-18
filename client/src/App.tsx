@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import FileUploadForm from "./components/FileUploadForm";
 import Dashboard from "./pages/Dashboard";
+import DriversPage from "./pages/Drivers";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -28,6 +29,14 @@ function App() {
           element={
             <ProtectedRoute allowedRole="driver">
               <FileUploadForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/drivers"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <DriversPage />
             </ProtectedRoute>
           }
         />
