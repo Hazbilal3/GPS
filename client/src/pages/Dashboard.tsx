@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import {
   getDriverReport,
@@ -10,58 +10,67 @@ import "../assets/components-css/Dashboard.css";
 
 type DriverOption = { id: number; label: string };
 
+const PAGE_WINDOW = 7;
 const toYMD = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
 
-const PAGE_WINDOW = 7;
-
 const Dashboard: React.FC = () => {
+  const token = useMemo(() => localStorage.getItem("token") ?? "", []);
+
+  // filters
   const [driverId, setDriverId] = useState<string>("");
   const [date, setDate] = useState<string>(toYMD(new Date()));
   const [statusFilter, setStatusFilter] = useState<"all" | "match" | "mismatch">(
     "all"
   );
 
+  // data + ui
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [rows, setRows] = useState<DriverReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // pagination (client-side over filtered rows)
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
-  const [total, setTotal] = useState<number | undefined>(undefined);
 
-  const token = useMemo(() => localStorage.getItem("token") ?? "", []);
-
-  // Load drivers for dropdown (fullName + id)
+  // ---- Fetch drivers for dropdown ----
   useEffect(() => {
     const BASE_URL =
       import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008";
-    const run = async () => {
+    const ac = new AbortController();
+
+    (async () => {
       try {
         const res = await fetch(`${BASE_URL}/drivers`, {
           headers: { Authorization: `Bearer ${token}` },
+          signal: ac.signal,
         });
         if (!res.ok) throw new Error("Failed to fetch drivers");
         const data = await res.json();
-        const opts = (Array.isArray(data) ? data : data?.data ?? [])
+        const list = (Array.isArray(data) ? data : data?.data ?? [])
           .map((d: any) => {
-            const idNum = Number(d.id ?? d.userId ?? d.driverId);
-            if (Number.isNaN(idNum)) return null;
+            const id = Number(d.id ?? d.userId ?? d.driverId);
+            if (Number.isNaN(id)) return null;
             const fullName = d.fullName || "";
-            return { id: idNum, label: `${fullName} (${idNum})` };
+            return { id, label: `${fullName} (${id})` };
           })
           .filter(Boolean) as DriverOption[];
-        setDrivers(opts);
+        setDrivers(list);
       } catch (e) {
-        console.error(e);
+        if (!(e instanceof DOMException && e.name === "AbortError")) {
+          // keep console for diagnostics
+          console.error(e);
+        }
       }
-    };
-    run();
+    })();
+
+    return () => ac.abort();
   }, [token]);
 
+  // ---- Derived rows (filter, paginate) ----
   const filteredRows = useMemo(() => {
     if (statusFilter === "all") return rows;
     return rows.filter((r) => {
@@ -71,39 +80,61 @@ const Dashboard: React.FC = () => {
     });
   }, [rows, statusFilter]);
 
-  async function handleSearch(e?: React.FormEvent) {
-    e?.preventDefault();
-    if (!driverId) {
-      setError("Please select a driver.");
-      return;
-    }
-    setError(null);
-    setLoading(true);
-    try {
-      const { rows: data, total } = await getDriverReport({
-        driverId: Number(driverId),
-        date,
-        page,
-        limit,
-        token,
-      });
-      setRows(data);
-      setTotal(total);
-    } catch (err: any) {
-      setRows([]);
-      setTotal(undefined);
-      setError(err?.message || "Failed to fetch data.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const totalFiltered = filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / limit));
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * limit;
+    return filteredRows.slice(start, start + limit);
+  }, [filteredRows, page, limit]);
 
   useEffect(() => {
-    if (driverId) handleSearch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, limit]);
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
 
-  async function handleExport() {
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
+
+  const pageNumbers = useMemo(() => {
+    const half = Math.floor(PAGE_WINDOW / 2);
+    let start = Math.max(1, page - half);
+    let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
+    if (end - start + 1 < PAGE_WINDOW) start = Math.max(1, end - PAGE_WINDOW + 1);
+    const nums: number[] = [];
+    for (let i = start; i <= end; i++) nums.push(i);
+    return nums;
+  }, [page, totalPages]);
+
+  // ---- Actions ----
+  const handleSearch = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault();
+      if (!driverId) {
+        setError("Please select a driver.");
+        return;
+      }
+      setError(null);
+      setLoading(true);
+      try {
+        const { rows: data } = await getDriverReport({
+          driverId: Number(driverId),
+          date,
+          page: 1, // fetch once; we paginate client-side
+          limit: 10000, // large chunk (keep if backend supports)
+          token,
+        });
+        setRows(data ?? []);
+        setPage(1);
+      } catch (err: any) {
+        setRows([]);
+        setError(err?.message || "Failed to fetch data.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [driverId, date, token]
+  );
+
+  const handleExport = useCallback(async () => {
     try {
       if (!driverId) {
         setError("Cannot export: please select a driver.");
@@ -126,26 +157,12 @@ const Dashboard: React.FC = () => {
     } catch (err: any) {
       setError(err?.message || "Export failed.");
     }
-  }
+  }, [driverId, date, token]);
 
-  const totalPages = total && limit ? Math.max(1, Math.ceil(total / limit)) : 1;
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-
-  const pageNumbers = useMemo(() => {
-    const half = Math.floor(PAGE_WINDOW / 2);
-    let start = Math.max(1, page - half);
-    let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
-    if (end - start + 1 < PAGE_WINDOW)
-      start = Math.max(1, end - PAGE_WINDOW + 1);
-    const nums: number[] = [];
-    for (let i = start; i <= end; i++) nums.push(i);
-    return nums;
-  }, [page, totalPages]);
-
+  // ---- Render ----
   return (
     <AdminLayout title="Overview">
-      {/* Search Filters */}
+      {/* Filters */}
       <form onSubmit={handleSearch} className="card p-3">
         <div className="row g-3 align-items-end">
           <div className="col-12 col-md-4">
@@ -184,11 +201,7 @@ const Dashboard: React.FC = () => {
             <button type="submit" className="btn btn-primary flex-grow-1">
               Search
             </button>
-            <button
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={handleExport}
-            >
+            <button type="button" className="btn btn-outline-primary" onClick={handleExport}>
               Export csv
             </button>
 
@@ -204,33 +217,36 @@ const Dashboard: React.FC = () => {
               <ul className="dropdown-menu dropdown-menu-end">
                 <li>
                   <button
-                    className={`dropdown-item ${
-                      statusFilter === "all" ? "active" : ""
-                    }`}
+                    className={`dropdown-item ${statusFilter === "all" ? "active" : ""}`}
                     type="button"
-                    onClick={() => setStatusFilter("all")}
+                    onClick={() => {
+                      setStatusFilter("all");
+                      setPage(1);
+                    }}
                   >
                     All
                   </button>
                 </li>
                 <li>
                   <button
-                    className={`dropdown-item ${
-                      statusFilter === "match" ? "active" : ""
-                    }`}
+                    className={`dropdown-item ${statusFilter === "match" ? "active" : ""}`}
                     type="button"
-                    onClick={() => setStatusFilter("match")}
+                    onClick={() => {
+                      setStatusFilter("match");
+                      setPage(1);
+                    }}
                   >
                     Match
                   </button>
                 </li>
                 <li>
                   <button
-                    className={`dropdown-item ${
-                      statusFilter === "mismatch" ? "active" : ""
-                    }`}
+                    className={`dropdown-item ${statusFilter === "mismatch" ? "active" : ""}`}
                     type="button"
-                    onClick={() => setStatusFilter("mismatch")}
+                    onClick={() => {
+                      setStatusFilter("mismatch");
+                      setPage(1);
+                    }}
                   >
                     Mismatch
                   </button>
@@ -240,12 +256,10 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {error && (
-          <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>
-        )}
+        {error && <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>}
       </form>
 
-      {/* Data Table */}
+      {/* Table */}
       <div className="card mt-3">
         <div className="table-responsive">
           <table className="table table-borderless align-middle mb-0 custom-table">
@@ -267,14 +281,14 @@ const Dashboard: React.FC = () => {
                     Loading…
                   </td>
                 </tr>
-              ) : filteredRows.length === 0 ? (
+              ) : paginatedRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-4 text-center text-muted">
                     No data
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((r, i) => {
+                paginatedRows.map((r, i) => {
                   const v = (r.status || "").toString().toLowerCase();
                   const isMatch = v === "match" || v === "matched";
                   return (
@@ -288,9 +302,7 @@ const Dashboard: React.FC = () => {
                       <td>{r.distanceKm ?? ""}</td>
                       <td>
                         <span
-                          className={`status-badge ${
-                            isMatch ? "status-match" : "status-mismatch"
-                          }`}
+                          className={`status-badge ${isMatch ? "status-match" : "status-mismatch"}`}
                         >
                           {isMatch ? "Match" : "Mismatch"}
                         </span>
@@ -317,7 +329,7 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
 
-        {/* Pagination Footer */}
+        {/* Pagination */}
         <div className="table-footer d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2">
           <div className="d-flex align-items-center gap-2">
             <span className="text-muted">Rows per page</span>
@@ -363,10 +375,7 @@ const Dashboard: React.FC = () => {
               )}
 
               {pageNumbers.map((n) => (
-                <li
-                  key={n}
-                  className={`page-item ${n === page ? "active" : ""}`}
-                >
+                <li key={n} className={`page-item ${n === page ? "active" : ""}`}>
                   <button className="page-link" onClick={() => setPage(n)}>
                     {n}
                   </button>
@@ -381,10 +390,7 @@ const Dashboard: React.FC = () => {
                     </li>
                   )}
                   <li className="page-item">
-                    <button
-                      className="page-link"
-                      onClick={() => setPage(totalPages)}
-                    >
+                    <button className="page-link" onClick={() => setPage(totalPages)}>
                       {totalPages}
                     </button>
                   </li>
