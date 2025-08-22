@@ -6,7 +6,7 @@ import cornerArt from "../assets/pics/Signup-img.png";
 async function registerUser(payload: Record<string, any>): Promise<boolean> {
   try {
     const baseUrl = import.meta.env.VITE_PORT ;
-    const res = await fetch(`${baseUrl}auth/register`, {
+    const res = await fetch(`${baseUrl}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

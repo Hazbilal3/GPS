@@ -80,7 +80,7 @@ const FileUploadForm: React.FC = () => {
     formData.append("driverId", String(driverId ?? ""));
     setStatus("Uploading...");
     try {
-      const res = await fetch(`${BASE_URL}uploads`, {
+      const res = await fetch(`${BASE_URL}/uploads`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`, // DO NOT set Content-Type for FormData
