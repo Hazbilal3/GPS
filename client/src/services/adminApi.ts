@@ -8,7 +8,7 @@ export type DriverReportRow = {
   mapsUrl?: string;
 };
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008";
+const BASE_URL = import.meta.env.VITE_PORT ;
 
 export async function getDriverReport(opts: {
   driverId: number;
@@ -73,7 +73,7 @@ export async function exportDriverReport(opts: {
 
   const url = new URL(
     "/report/export",
-    import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008"
+    import.meta.env.VITE_PORT 
   );
   url.searchParams.set("driverId", String(driverId));
   url.searchParams.set("date", date);

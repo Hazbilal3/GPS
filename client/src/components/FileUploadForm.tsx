@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import "../assets/components-css/FileUploadForm.css";
 
-const BASE_URL = "http://localhost:3008/";
+const BASE_URL = import.meta.env.VITE_PORT;
 
 const FileUploadForm: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);

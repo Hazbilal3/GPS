@@ -1,6 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
-/* ------------ Upload area ------------ */
 .upload-wrapper {
   font-family: "Inter", sans-serif;
   max-width: 480px;
@@ -56,7 +55,6 @@
   line-height: 1;
 }
 
-/* ------------ Upload button (animated fill) ------------ */
 .submit-btn {
   font-size: 15px;
   font-weight: 600;
@@ -111,7 +109,6 @@
   border-radius: 6px;
 }
 
-/* ---- Modal overlay: above everything, soft blur ---- */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -126,7 +123,6 @@
   backdrop-filter: blur(2px);
 }
 
-/* ---- Success card ---- */
 .modal-content {
   width: 92%;
   max-width: 420px;
@@ -165,7 +161,6 @@
   margin: 0 0 18px;
 }
 
-/* round green check icon */
 .modal-icon {
   width: 42px;
   height: 42px;
@@ -175,11 +170,10 @@
   place-items: center;
   font-weight: 700;
   color: #fff;
-  background: #10b981; /* green-500 */
+  background: #10b981;
   box-shadow: 0 6px 14px rgba(16, 185, 129, 0.35);
 }
 
-/* Close button – primary look (blue) */
 .close-btn {
   border: none;
   padding: 10px 22px;
@@ -207,7 +201,6 @@
   z-index: 1;
 }
 
-/* ------------ Table wrapper ------------ */
 .response-table-wrapper {
   margin: 40px auto 60px;
   width: 100%;
@@ -224,10 +217,9 @@
 
 .table-scroll-container {
   width: 100%;
-  overflow-x: auto; /* only shows if needed */
+  overflow-x: auto;
 }
 
-/* ------------ Table ------------ */
 .styled-table {
   width: 100%;
   table-layout: fixed;
@@ -239,7 +231,6 @@
   font-size: 14px;
 }
 
-/* Header */
 .styled-table thead th {
   background: #f5f7fa;
   text-align: left;
@@ -253,7 +244,6 @@
   border-top-right-radius: 8px;
 }
 
-/* Body rows */
 .styled-table tbody tr {
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
@@ -263,7 +253,6 @@
   background-color: #f3f6fc;
 }
 
-/* Body cells: allow multi-line wrapping so long text (Address, URLs) doesn’t overflow */
 .styled-table tbody td {
   padding: 12px;
   background: #fff;
@@ -273,7 +262,6 @@
   line-height: 1.35;
 }
 
-/* Make links in the table look clean */
 .styled-table tbody td a {
   color: #2563eb;
   text-decoration: none;
@@ -282,13 +270,11 @@
   text-decoration: underline;
 }
 
-/* Optional: soft dividers for readability on wide screens */
 .styled-table thead th + th,
 .styled-table tbody td + td {
   border-left: 1px solid #f0f2f6;
 }
 
-/* ------------ Responsive tweaks ------------ */
 @media (max-width: 768px) {
   .upload-wrapper {
     margin-top: 40px;

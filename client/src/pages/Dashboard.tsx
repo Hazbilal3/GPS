@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import {
   getDriverReport,
@@ -38,22 +32,20 @@ const DEFAULT_EMBED =
   "https://www.google.com/maps/embed?pb=!1m14!1m12!1m3!1d14473.199485265202!2d67.1298786!3d24.921852400000002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sen!2s!4v1755878790281!5m2!1sen!2s";
 
 function toEmbedUrl(row: DriverReportRow): string {
-  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-  const originRaw = (row.lastGpsLocation || "").trim();
-  const destinationRaw = (row.address || row.expectedLocation || "").trim();
-
   const raw = (row.mapsUrl || "").trim();
-  if (raw && /\/maps\/embed/i.test(raw)) {
-    return raw;
+  if (raw && /\/maps\/embed/i.test(raw)) return raw;
+
+  const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+  const origin = (row.lastGpsLocation || "").trim();
+  const destination = (row.address || row.expectedLocation || "").trim();
+
+  if (API_KEY && origin && destination) {
+    return `https://www.google.com/maps/embed/v1/directions?key=${API_KEY}&origin=${encodeURIComponent(
+      origin
+    )}&destination=${encodeURIComponent(destination)}&mode=driving`;
   }
 
-  if (API_KEY && originRaw && destinationRaw) {
-    const origin = encodeURIComponent(originRaw);
-    const destination = encodeURIComponent(destinationRaw);
-    return `https://www.google.com/maps/embed/v1/directions?key=${API_KEY}&origin=${origin}&destination=${destination}&mode=driving`;
-  }
-
-  const single = destinationRaw || originRaw;
+  const single = destination || origin;
   if (API_KEY && single) {
     return `https://www.google.com/maps/embed/v1/place?key=${API_KEY}&q=${encodeURIComponent(
       single
@@ -66,11 +58,9 @@ function toEmbedUrl(row: DriverReportRow): string {
 const Dashboard: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
 
-  const [driverId, setDriverId] = useState<string>("");
-  const [date, setDate] = useState<string>(toYMD(new Date()));
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "match" | "mismatch"
-  >("all");
+  const [driverId, setDriverId] = useState("");
+  const [date, setDate] = useState(toYMD(new Date()));
+  const [statusFilter, setStatusFilter] = useState<"all" | "match" | "mismatch">("all");
 
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [rows, setRows] = useState<DriverReportRow[]>([]);
@@ -82,17 +72,17 @@ const Dashboard: React.FC = () => {
 
   const [showMap, setShowMap] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DriverReportRow | null>(null);
-  const [mapSrc, setMapSrc] = useState<string>("");
+  const [mapSrc, setMapSrc] = useState("");
   const [showProof, setShowProof] = useState(false);
 
   const cardRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
-  const [panelTop, setPanelTop] = useState<number>(PANEL_PADDING);
+  const [panelTop, setPanelTop] = useState(PANEL_PADDING);
 
   useEffect(() => {
-    const BASE_URL =
-      import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3008";
+    const BASE_URL = import.meta.env.VITE_PORT ;
     const ac = new AbortController();
+
     (async () => {
       try {
         const res = await fetch(`${BASE_URL}/drivers`, {
@@ -105,30 +95,33 @@ const Dashboard: React.FC = () => {
           .map((d: any) => {
             const id = Number(d.id ?? d.userId ?? d.driverId);
             if (Number.isNaN(id)) return null;
-            const fullName = d.fullName || "";
-            return { id, label: `${fullName} (${id})` };
+            return { id, label: `${d.fullName || ""} (${id})` };
           })
           .filter(Boolean) as DriverOption[];
         setDrivers(list);
       } catch (e) {
-        if (!(e instanceof DOMException && e.name === "AbortError"))
+        if (!(e instanceof DOMException && (e as DOMException).name === "AbortError")) {
           console.error(e);
+        }
       }
     })();
+
     return () => ac.abort();
   }, [token]);
 
   const filteredRows = useMemo(() => {
     if (statusFilter === "all") return rows;
     return rows.filter((r) => {
-      const v = (r.status || "").toString().toLowerCase();
+      const v = String(r.status || "").toLowerCase();
       const isMatch = v === "match" || v === "matched";
       return statusFilter === "match" ? isMatch : !isMatch;
     });
   }, [rows, statusFilter]);
 
-  const totalFiltered = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalFiltered / limit));
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredRows.length / limit)),
+    [filteredRows.length, limit]
+  );
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -139,18 +132,14 @@ const Dashboard: React.FC = () => {
     return filteredRows.slice(start, start + limit);
   }, [filteredRows, page, limit]);
 
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-
   const pageNumbers = useMemo(() => {
     const half = Math.floor(PAGE_WINDOW / 2);
     let start = Math.max(1, page - half);
     let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
-    if (end - start + 1 < PAGE_WINDOW)
-      start = Math.max(1, end - PAGE_WINDOW + 1);
-    const nums: number[] = [];
-    for (let i = start; i <= end; i++) nums.push(i);
-    return nums;
+    if (end - start + 1 < PAGE_WINDOW) start = Math.max(1, end - PAGE_WINDOW + 1);
+    const out: number[] = [];
+    for (let i = start; i <= end; i++) out.push(i);
+    return out;
   }, [page, totalPages]);
 
   const driverName = useMemo(() => {
@@ -174,7 +163,7 @@ const Dashboard: React.FC = () => {
           driverId: Number(driverId),
           date,
           page: 1,
-          limit: 10000,
+          limit: 10000, 
           token,
         });
         setShowMap(false);
@@ -193,17 +182,13 @@ const Dashboard: React.FC = () => {
   );
 
   const handleExport = useCallback(async () => {
+    if (!driverId) {
+      setError("Cannot export: please select a driver.");
+      return;
+    }
+    setError(null);
     try {
-      if (!driverId) {
-        setError("Cannot export: please select a driver.");
-        return;
-      }
-      setError(null);
-      const blob = await exportDriverReport({
-        driverId: Number(driverId),
-        date,
-        token,
-      });
+      const blob = await exportDriverReport({ driverId: Number(driverId), date, token });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -228,24 +213,18 @@ const Dashboard: React.FC = () => {
       const rowRect = rowEl.getBoundingClientRect();
 
       let desiredTop = rowRect.top - cardRect.top - 8;
-      const maxTop = Math.max(
-        PANEL_PADDING,
-        card.clientHeight - PANEL_H - PANEL_PADDING
-      );
+      const maxTop = Math.max(PANEL_PADDING, card.clientHeight - PANEL_H - PANEL_PADDING);
       desiredTop = Math.min(Math.max(desiredTop, PANEL_PADDING), maxTop);
       setPanelTop(desiredTop);
 
       const absolutePanelTop = cardRect.top + desiredTop;
       const viewportTop = window.scrollY;
       const viewportBottom = viewportTop + window.innerHeight;
-      if (
-        absolutePanelTop < viewportTop + 80 ||
-        absolutePanelTop > viewportBottom - PANEL_H - 40
-      ) {
-        window.scrollTo({
-          top: window.scrollY + absolutePanelTop - 80,
-          behavior: "smooth",
-        });
+      const outOfView =
+        absolutePanelTop < viewportTop + 80 || absolutePanelTop > viewportBottom - PANEL_H - 40;
+
+      if (outOfView) {
+        window.scrollTo({ top: window.scrollY + absolutePanelTop - 80, behavior: "smooth" });
       }
     } else {
       setPanelTop(PANEL_PADDING);
@@ -253,6 +232,9 @@ const Dashboard: React.FC = () => {
 
     setShowMap(true);
   }, []);
+
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
 
   return (
     <AdminLayout title="Overview">
@@ -298,11 +280,7 @@ const Dashboard: React.FC = () => {
             <button type="submit" className="btn btn-primary flex-grow-1">
               Search
             </button>
-            <button
-              type="button"
-              className="btn btn-outline-primary"
-              onClick={handleExport}
-            >
+            <button type="button" className="btn btn-outline-primary" onClick={handleExport}>
               Export csv
             </button>
 
@@ -316,56 +294,26 @@ const Dashboard: React.FC = () => {
                 <LuSlidersHorizontal />
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
-                <li>
-                  <button
-                    className={`dropdown-item ${
-                      statusFilter === "all" ? "active" : ""
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter("all");
-                      setPage(1);
-                    }}
-                  >
-                    All
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className={`dropdown-item ${
-                      statusFilter === "match" ? "active" : ""
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter("match");
-                      setPage(1);
-                    }}
-                  >
-                    Match
-                  </button>
-                </li>
-                <li>
-                  <button
-                    className={`dropdown-item ${
-                      statusFilter === "mismatch" ? "active" : ""
-                    }`}
-                    type="button"
-                    onClick={() => {
-                      setStatusFilter("mismatch");
-                      setPage(1);
-                    }}
-                  >
-                    Mismatch
-                  </button>
-                </li>
+                {(["all", "match", "mismatch"] as const).map((opt) => (
+                  <li key={opt}>
+                    <button
+                      className={`dropdown-item ${statusFilter === opt ? "active" : ""}`}
+                      type="button"
+                      onClick={() => {
+                        setStatusFilter(opt);
+                        setPage(1);
+                      }}
+                    >
+                      {opt[0].toUpperCase() + opt.slice(1)}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         </div>
 
-        {error && (
-          <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>
-        )}
+        {error && <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>}
       </form>
 
       <div ref={cardRef} className="card mt-3 position-relative">
@@ -397,9 +345,7 @@ const Dashboard: React.FC = () => {
                 </tr>
               ) : (
                 paginatedRows.map((r, i) => {
-                  const v = (r.status || "").toString().toLowerCase();
-                  const isMatch = v === "match" || v === "matched";
-
+                  const isMatch = String(r.status || "").toLowerCase().startsWith("match");
                   const rowKey = String(r.barcode ?? `row-${i}`);
 
                   return (
@@ -487,10 +433,7 @@ const Dashboard: React.FC = () => {
               )}
 
               {pageNumbers.map((n) => (
-                <li
-                  key={n}
-                  className={`page-item ${n === page ? "active" : ""}`}
-                >
+                <li key={n} className={`page-item ${n === page ? "active" : ""}`}>
                   <button className="page-link" onClick={() => setPage(n)}>
                     {n}
                   </button>
@@ -505,10 +448,7 @@ const Dashboard: React.FC = () => {
                     </li>
                   )}
                   <li className="page-item">
-                    <button
-                      className="page-link"
-                      onClick={() => setPage(totalPages)}
-                    >
+                    <button className="page-link" onClick={() => setPage(totalPages)}>
                       {totalPages}
                     </button>
                   </li>
@@ -622,9 +562,7 @@ const Dashboard: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="text-end text-muted">
-                  {selectedRow?.address || "—"}
-                </div>
+                <div className="text-end text-muted">{selectedRow?.address || "—"}</div>
               </div>
 
               {showProof && (
@@ -663,13 +601,7 @@ const Dashboard: React.FC = () => {
                       </button>
                     </div>
 
-                    <div
-                      className="p-3"
-                      style={{
-                        maxHeight: MAP_HEIGHT,
-                        overflow: "auto",
-                      }}
-                    >
+                    <div className="p-3" style={{ maxHeight: MAP_HEIGHT, overflow: "auto" }}>
                       <img
                         src={
                           selectedRow?.proofImage ||
@@ -678,27 +610,15 @@ const Dashboard: React.FC = () => {
                           "https://smartroutes.io/blogs/content/images/2024/04/Electronic-Proof-of-Delivery--ePOD-.png"
                         }
                         alt="Delivery proof"
-                        style={{
-                          width: "100%",
-                          height: "250px",
-                          borderRadius: 12,
-                          display: "block",
-                        }}
+                        style={{ width: "100%", height: 250, borderRadius: 12, display: "block" }}
                       />
                       <div className="mt-3 small text-muted">
-                        <strong>GPS Location:</strong>{" "}
-                        {selectedRow?.lastGpsLocation || "—"}
+                        <strong>GPS Location:</strong> {selectedRow?.lastGpsLocation || "—"}
                       </div>
                     </div>
 
-                    <div
-                      className="px-3 py-2 d-flex justify-content-end"
-                      style={{ borderTop: "1px solid #e9eef5" }}
-                    >
-                      <button
-                        className="btn btn-outline-secondary"
-                        onClick={() => setShowProof(false)}
-                      >
+                    <div className="px-3 py-2 d-flex justify-content-end" style={{ borderTop: "1px solid #e9eef5" }}>
+                      <button className="btn btn-outline-secondary" onClick={() => setShowProof(false)}>
                         Close
                       </button>
                     </div>

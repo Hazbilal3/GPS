@@ -8,7 +8,7 @@ async function loginUser(
   credentials: Record<string, any>
 ): Promise<{ token: string | null; roleFromApi: number | null }> {
   try {
-    const baseUrl = "http://localhost:3008/";
+    const baseUrl = import.meta.env.VITE_PORT ;
     const res = await fetch(`${baseUrl}auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
