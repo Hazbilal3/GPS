@@ -1,26 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LuLayoutGrid,
   LuUsers,
-  LuTrendingUp,
-  LuFolder,
+  // LuTrendingUp,
+  // LuFolder,
   LuUpload,
-  LuSettings,
+  // LuSettings,
   LuLogOut,
   LuMenu,
 } from "react-icons/lu";
 import "../assets/components-css/Dashboard.css";
 import cmjl from "../assets/pics/dashboard-logo.png";
 
+type MenuItem = {
+  to?: string;
+  label: string;
+  icon: React.ReactNode;
+  onClick?: () => void;
+};
+
 type AdminLayoutProps = {
   title?: string;
   children: React.ReactNode;
+  /** 'admin' keeps your old menu; 'driver' shows Upload/Settings only */
+  variant?: "admin" | "driver";
+  /** override the right-side name in the topbar (e.g., driver’s full name) */
+  rightNameOverride?: string;
+  /** optional custom menu (if you want full control) */
+  menuOverride?: MenuItem[];
 };
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({
+  title,
+  children,
+  variant = "admin",
+  rightNameOverride,
+  menuOverride,
+}) => {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const initialOpen =
+    typeof window !== "undefined" ? window.innerWidth >= 992 : true;
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(initialOpen);
+
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 992) setSidebarOpen(true);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   const sidebarWidth = sidebarOpen ? "260px" : "76px";
 
   const adminFirstName =
@@ -28,19 +59,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
     localStorage.getItem("firstName") ||
     "Admin";
 
-  const menuItems = [
-    { to: "/dashboard", label: "Overview", icon: <LuLayoutGrid /> },
-    { to: "/drivers", label: "Drivers", icon: <LuUsers /> },
-    // { to: "/dashboard", label: "Results", icon: <LuTrendingUp /> },
-    // { to: "/dashboard", label: "Upload", icon: <LuUpload /> },
-    // { to: "/dashboard", label: "Files", icon: <LuFolder /> },
-    // { to: "/dashboard", label: "Settings", icon: <LuSettings /> },
-  ];
+  const rightName =
+    rightNameOverride || (variant === "driver" ? "Driver" : adminFirstName);
 
   function handleLogout() {
     localStorage.removeItem("token");
     localStorage.removeItem("firstname");
     localStorage.removeItem("firstName");
+    localStorage.removeItem("driverId");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("driverName");
     try {
       navigate("/");
     } catch {
@@ -48,17 +77,41 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
     }
   }
 
+  const adminMenu: MenuItem[] = [
+    { to: "/dashboard", label: "Overview", icon: <LuLayoutGrid /> },
+    { to: "/drivers", label: "Drivers", icon: <LuUsers /> },
+    // { to: "/dashboard", label: "Results", icon: <LuTrendingUp /> },
+    // { to: "/admin-upload", label: "Upload", icon: <LuUpload /> },
+    // { to: "/dashboard", label: "Files", icon: <LuFolder /> },
+    // { to: "/settings", label: "Settings", icon: <LuSettings /> },
+  ];
+
+  const driverMenu: MenuItem[] = [
+    { to: "/upload", label: "Upload", icon: <LuUpload /> },
+    // { to: "/settings", label: "Settings", icon: <LuSettings /> },
+  ];
+
+  const menuItems = useMemo(
+    () => menuOverride ?? (variant === "driver" ? driverMenu : adminMenu),
+    [menuOverride, variant]
+  );
+
   return (
     <div
-      className={`admin-shell ${sidebarOpen ? "" : "sidebar-collapsed"}`}
+      className={`admin-shell ${
+        sidebarOpen ? "sidebar-open" : "sidebar-collapsed"
+      }`}
       style={{ ["--sidebar-current-w" as any]: sidebarWidth }}
     >
       {/* Sidebar */}
-      <aside className={`admin-sidebar ${sidebarOpen ? "open" : "collapsed"}`}>
+      <aside
+        className={`admin-sidebar ${sidebarOpen ? "open" : "collapsed"}`}
+        aria-hidden={!sidebarOpen}
+      >
         <div className="sidebar-inner">
           <div className="sidebar-header">
             <img src={cmjl} alt="CMJL" className="brand-img" />
-            {sidebarOpen && <div className="brand-title"></div>}
+            {sidebarOpen && <div className="brand-title" />}
             <button
               type="button"
               className="btn-toggle"
@@ -73,17 +126,36 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
           <nav className="sidebar-menu py-3">
             <ul>
               {menuItems.map((m) => (
-                <li key={m.to}>
-                  <NavLink
-                    to={m.to}
-                    className="menu-link"
-                    title={!sidebarOpen ? m.label : undefined}
-                  >
-                    <span className="menu-icon">{m.icon}</span>
-                    {sidebarOpen && (
-                      <span className="menu-text">{m.label}</span>
-                    )}
-                  </NavLink>
+                <li key={m.label}>
+                  {m.onClick ? (
+                    <button
+                      className="menu-link as-button"
+                      onClick={() => {
+                        m.onClick?.();
+                        if (window.innerWidth < 992) setSidebarOpen(false);
+                      }}
+                      title={!sidebarOpen ? m.label : undefined}
+                    >
+                      <span className="menu-icon">{m.icon}</span>
+                      {sidebarOpen && (
+                        <span className="menu-text">{m.label}</span>
+                      )}
+                    </button>
+                  ) : (
+                    <NavLink
+                      to={m.to || "#"}
+                      className="menu-link"
+                      title={!sidebarOpen ? m.label : undefined}
+                      onClick={() => {
+                        if (window.innerWidth < 992) setSidebarOpen(false);
+                      }}
+                    >
+                      <span className="menu-icon">{m.icon}</span>
+                      {sidebarOpen && (
+                        <span className="menu-text">{m.label}</span>
+                      )}
+                    </NavLink>
+                  )}
                 </li>
               ))}
             </ul>
@@ -107,12 +179,22 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
       {/* Main area */}
       <div className="admin-main">
         <header className="admin-topbar">
+          {/* Mobile hamburger (kept in topbar so it’s always reachable) */}
+          <button
+            type="button"
+            className="btn btn-outline-light topbar-hamburger"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open menu"
+          >
+            <LuMenu />
+          </button>
+
           <div className="topbar-left">
             <h1>Welcome to CMJL</h1>
           </div>
           <div className="topbar-right">
             <div className="profile-avatar" />
-            <div className="profile-name">{adminFirstName}</div>
+            <div className="profile-name">{rightName}</div>
           </div>
         </header>
 
@@ -121,6 +203,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
           {children}
         </main>
       </div>
+
+      {/* Mobile backdrop when sidebar is open */}
+      <button
+        className={`sidebar-backdrop ${sidebarOpen ? "show" : ""}`}
+        aria-label="Close menu"
+        onClick={() => setSidebarOpen(false)}
+      />
     </div>
   );
 };
