@@ -30,11 +30,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ title, children }) => {
 
   const menuItems = [
     { to: "/dashboard", label: "Overview", icon: <LuLayoutGrid /> },
-    { to: "/dashboard", label: "Drivers", icon: <LuUsers /> },
-    { to: "/dashboard", label: "Results", icon: <LuTrendingUp /> },
-    { to: "/dashboard", label: "Upload", icon: <LuUpload /> },
-    { to: "/dashboard", label: "Files", icon: <LuFolder /> },
-    { to: "/dashboard", label: "Settings", icon: <LuSettings /> },
+    { to: "/drivers", label: "Drivers", icon: <LuUsers /> },
+    // { to: "/dashboard", label: "Results", icon: <LuTrendingUp /> },
+    // { to: "/dashboard", label: "Upload", icon: <LuUpload /> },
+    // { to: "/dashboard", label: "Files", icon: <LuFolder /> },
+    // { to: "/dashboard", label: "Settings", icon: <LuSettings /> },
   ];
 
   function handleLogout() {

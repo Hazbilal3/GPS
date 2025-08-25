@@ -8,7 +8,7 @@ async function loginUser(
   credentials: Record<string, any>
 ): Promise<{ token: string | null; roleFromApi: number | null }> {
   try {
-    const baseUrl = import.meta.env.VITE_PORT ;
+    const baseUrl = import.meta.env.VITE_PORT;
     const res = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -29,7 +29,7 @@ async function loginUser(
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState<"admin" | "driver">("admin");
-  const [email, setEmail] = useState("");
+  const [adminId, setAdminId] = useState("");
   const [driverId, setDriverId] = useState("");
   const [password, setPassword] = useState("");
 
@@ -38,33 +38,22 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
-  const isEmail = (val: string) => val.includes("@");
-  const isNumeric = (val: string) => /^-?\d+(\.\d+)?$/.test(val.trim());
+  const isNumeric = (val: string) => /^\d+$/.test(val.trim());
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
 
     if (role === "admin") {
-      const ident = email.trim();
-      if (!ident) {
-        errors.email = "Email or Admin ID is required.";
-      } else if (isEmail(ident)) {
-        if (!/\S+@\S+\.\S+/.test(ident)) {
-          errors.email = "Invalid email format.";
-        }
-      } else {
-        if (!isNumeric(ident)) errors.email = "Admin ID must be a number.";
+      if (!adminId.trim()) {
+        errors.adminId = "Admin ID is required.";
+      } else if (!isNumeric(adminId)) {
+        errors.adminId = "Admin ID must be numeric.";
       }
     } else {
-      const ident = driverId.trim();
-      if (!ident) {
-        errors.driverId = "Email or Driver ID is required.";
-      } else if (isEmail(ident)) {
-        if (!/\S+@\S+\.\S+/.test(ident)) {
-          errors.driverId = "Invalid email format.";
-        }
-      } else {
-        if (!isNumeric(ident)) errors.driverId = "Driver ID must be a number.";
+      if (!driverId.trim()) {
+        errors.driverId = "Driver ID is required.";
+      } else if (!isNumeric(driverId)) {
+        errors.driverId = "Driver ID must be numeric.";
       }
     }
 
@@ -84,19 +73,9 @@ const Login: React.FC = () => {
     let payload: Record<string, any> = { password, userRole };
 
     if (role === "admin") {
-      const ident = email.trim();
-      if (isEmail(ident)) {
-        payload.email = ident;
-      } else {
-        payload.adminId = Number(ident);
-      }
+      payload.adminId = Number(adminId);
     } else {
-      const ident = driverId.trim();
-      if (isEmail(ident)) {
-        payload.email = ident;
-      } else {
-        payload.driverId = Number(ident);
-      }
+      payload.driverId = Number(driverId);
     }
 
     const { token, roleFromApi } = await loginUser(payload);
@@ -109,9 +88,12 @@ const Login: React.FC = () => {
 
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
-    localStorage.setItem("driverId", driverId);
-    if (roleFromApi !== null)
+    if (role === "driver") {
+      localStorage.setItem("driverId", driverId);
+    }
+    if (roleFromApi !== null) {
       localStorage.setItem("roleNum", String(roleFromApi));
+    }
 
     navigate(role === "admin" ? "/dashboard" : "/upload");
   };
@@ -146,29 +128,29 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit} className="stack-form" noValidate>
           {role === "admin" ? (
             <>
-              <label className="form-label">Email address</label>
+              <label className="form-label">Admin ID</label>
               <input
                 type="text"
                 className={`form-control ${
-                  fieldErrors.email ? "is-invalid" : ""
+                  fieldErrors.adminId ? "is-invalid" : ""
                 }`}
-                placeholder="Enter your email or Admin ID"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your Admin ID"
+                value={adminId}
+                onChange={(e) => setAdminId(e.target.value)}
               />
-              {fieldErrors.email && (
-                <div className="text-danger small">{fieldErrors.email}</div>
+              {fieldErrors.adminId && (
+                <div className="text-danger small">{fieldErrors.adminId}</div>
               )}
             </>
           ) : (
             <>
-              <label className="form-label">Email or Driver ID</label>
+              <label className="form-label">Driver ID</label>
               <input
                 type="text"
                 className={`form-control ${
                   fieldErrors.driverId ? "is-invalid" : ""
                 }`}
-                placeholder="Enter your email or Driver ID"
+                placeholder="Enter your Driver ID"
                 value={driverId}
                 onChange={(e) => setDriverId(e.target.value)}
               />
