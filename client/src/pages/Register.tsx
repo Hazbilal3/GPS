@@ -200,7 +200,7 @@ const Register: React.FC = () => {
             {submitting ? "Signing up..." : "Sign Up"}
           </button>
 
-          <p className="text-center mb-0 mt-3">
+          <p className="text-center mb-0 mt-3 text-black">
             Already signed up? <Link to="/">Login</Link>
           </p>
         </form>
