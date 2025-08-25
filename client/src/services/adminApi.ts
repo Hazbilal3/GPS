@@ -1,3 +1,5 @@
+import { port } from "../port.interface";
+
 export type DriverReportRow = {
   barcode?: string;
   address?: string;
@@ -8,7 +10,7 @@ export type DriverReportRow = {
   mapsUrl?: string;
 };
 
-const BASE_URL = import.meta.env.VITE_PORT ;
+const BASE_URL = port ;
 
 export async function getDriverReport(opts: {
   driverId: number;
@@ -73,7 +75,7 @@ export async function exportDriverReport(opts: {
 
   const url = new URL(
     "/report/export",
-    import.meta.env.VITE_PORT 
+    port
   );
   url.searchParams.set("driverId", String(driverId));
   url.searchParams.set("date", date);

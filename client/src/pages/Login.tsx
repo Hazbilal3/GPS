@@ -3,12 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import cmjlLogo from "../assets/pics/bg-logo.png";
 import illoLeft from "../assets/pics/left-login-img.png";
 import illoRight from "../assets/pics/right-login-img.png";
+import { port } from "../port.interface";
 
 async function loginUser(
   credentials: Record<string, any>
 ): Promise<{ token: string | null; roleFromApi: number | null }> {
   try {
-    const baseUrl = import.meta.env.VITE_PORT;
+    const baseUrl = port;
     const res = await fetch(`${baseUrl}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

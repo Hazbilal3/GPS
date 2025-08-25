@@ -7,6 +7,7 @@ import {
 } from "../services/adminApi";
 import { LuSlidersHorizontal, LuX } from "react-icons/lu";
 import "../assets/components-css/Dashboard.css";
+import { port } from "../port.interface";
 
 type DriverOption = { id: number; label: string };
 
@@ -80,7 +81,7 @@ const Dashboard: React.FC = () => {
   const [panelTop, setPanelTop] = useState(PANEL_PADDING);
 
   useEffect(() => {
-    const BASE_URL = import.meta.env.VITE_PORT ;
+    const BASE_URL = port;
     const ac = new AbortController();
 
     (async () => {

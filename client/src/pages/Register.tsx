@@ -2,10 +2,11 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import cmjlLogo from "../assets/pics/bg-logo.png";
 import cornerArt from "../assets/pics/Signup-img.png";
+import { port } from "../port.interface";
 
 async function registerUser(payload: Record<string, any>): Promise<boolean> {
   try {
-    const baseUrl = import.meta.env.VITE_PORT;
+    const baseUrl = port;
     const res = await fetch(`${baseUrl}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import { listDrivers } from "../services/adminApi";
 import "../assets/components-css/FileUploadForm.css";
+import { port } from "../port.interface";
 
 type DropState = "idle" | "dragover" | "loading";
 
-const BASE_URL = import.meta.env.VITE_PORT;
+const BASE_URL = port;
 
 const FileUploadForm: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
