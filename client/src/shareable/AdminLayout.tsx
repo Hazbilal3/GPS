@@ -7,6 +7,7 @@ import {
   // LuFolder,
   LuUpload,
   // LuSettings,
+  LuUser   ,
   LuLogOut,
   LuMenu,
 } from "react-icons/lu";
@@ -23,11 +24,8 @@ type MenuItem = {
 type AdminLayoutProps = {
   title?: string;
   children: React.ReactNode;
-  /** 'admin' keeps your old menu; 'driver' shows Upload/Settings only */
   variant?: "admin" | "driver";
-  /** override the right-side name in the topbar (e.g., driver’s full name) */
   rightNameOverride?: string;
-  /** optional custom menu (if you want full control) */
   menuOverride?: MenuItem[];
 };
 
@@ -103,7 +101,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       }`}
       style={{ ["--sidebar-current-w" as any]: sidebarWidth }}
     >
-      {/* Sidebar */}
       <aside
         className={`admin-sidebar ${sidebarOpen ? "open" : "collapsed"}`}
         aria-hidden={!sidebarOpen}
@@ -176,10 +173,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         </div>
       </aside>
 
-      {/* Main area */}
       <div className="admin-main">
         <header className="admin-topbar">
-          {/* Mobile hamburger (kept in topbar so it’s always reachable) */}
           <button
             type="button"
             className="btn btn-outline-light topbar-hamburger"
@@ -193,7 +188,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             <h1>Welcome to CMJL</h1>
           </div>
           <div className="topbar-right">
-            <div className="profile-avatar" />
+            <div className="profile-avatar" >
+                <LuUser   />
+  </div>
             <div className="profile-name">{rightName}</div>
           </div>
         </header>
@@ -204,7 +201,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
         </main>
       </div>
 
-      {/* Mobile backdrop when sidebar is open */}
       <button
         className={`sidebar-backdrop ${sidebarOpen ? "show" : ""}`}
         aria-label="Close menu"
