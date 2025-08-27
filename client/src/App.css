@@ -1,7 +1,11 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500&display=swap");
 
-body, input, button, select, textarea {
-  font-family: 'Inter Tight', sans-serif;
+body,
+input,
+button,
+select,
+textarea {
+  font-family: "Inter Tight", sans-serif;
 }
 
 .auth-onepage {
@@ -72,7 +76,7 @@ body, input, button, select, textarea {
   transition: background 0.2s ease;
 }
 .slider::before {
-  content: "\f508"; 
+  content: "\f508";
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
   display: flex;
@@ -95,7 +99,7 @@ body, input, button, select, textarea {
 }
 .switch input:checked + .slider::before {
   transform: translateX(26px);
-  content: "\f0d1"; 
+  content: "\f0d1";
 }
 .stack-form .form-label {
   font-size: 17px;
@@ -149,18 +153,21 @@ body, input, button, select, textarea {
 /* ------------------ */
 
 .auth-stack--wide {
-  max-width: 860px;               
+  max-width: 860px;
 }
-
 
 .auth-stack--wide .stack-form .form-control {
   padding: 0.9rem 1rem;
 }
 
-
-.grid-2 { display: grid; gap: 24px; }
+.grid-2 {
+  display: grid;
+  gap: 24px;
+}
 @media (min-width: 768px) {
-  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .corner-illus {
@@ -174,14 +181,24 @@ body, input, button, select, textarea {
 }
 
 @media (max-width: 767px) {
-  .auth-stack--wide { max-width: 520px; }  
+  .auth-stack--wide {
+    max-width: 520px;
+  }
 }
 
 p.text-center a {
   text-decoration: none;
-  color: #007bff; 
+  color: #007bff;
 }
 
 p.text-center a:hover {
-  text-decoration: underline; 
+  text-decoration: underline;
+}
+.close-btn--danger {
+  background: linear-gradient(90deg, #ef4444, #b91c1c);
+  color: #fff;
+}
+.close-btn--danger:hover {
+  background: linear-gradient(90deg, #b91c1c);
+  filter: brightness(1.05);
 }

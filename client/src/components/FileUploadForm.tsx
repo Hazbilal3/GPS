@@ -2,61 +2,78 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import { listDrivers } from "../services/adminApi";
 import "../assets/components-css/FileUploadForm.css";
-import { port } from "../port.interface";
+import { port as PORT_BASE } from "../port.interface";
 
+function getRoleName(): "admin" | "driver" | "" {
+  const raw =
+    (localStorage.getItem("userRole") ?? localStorage.getItem("role") ?? "")
+      .toString()
+      .toLowerCase()
+      .trim();
+  if (raw === "1" || raw === "admin") return "admin";
+  if (raw === "2" || raw === "driver") return "driver";
+  return "";
+}
+
+type DriverOption = { id: number | string; label: string };
+
+const BASE_URL = PORT_BASE;
 type DropState = "idle" | "dragover" | "loading";
-
-const BASE_URL = port;
 
 const FileUploadForm: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
-  const [driverName, setDriverName] = useState("Driver");
+  const role = getRoleName();
+  const isAdmin = role === "admin";
+
+  const [drivers, setDrivers] = useState<DriverOption[]>([]);
+  const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const [rightName, setRightName] = useState(isAdmin ? "Admin" : "Driver");
 
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<DropState>("idle");
   const [status, setStatus] = useState<string | null>(null);
-
   const [showModal, setShowModal] = useState(false);
-
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = showModal ? "hidden" : prev || "";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showModal]);
+useEffect(() => {
+  const prev = document.body.style.overflow;
+  document.body.style.overflow = showModal ? "hidden" : prev || "";
+  return () => {
+    document.body.style.overflow = prev;
+  };
+}, [showModal]);
 
   useEffect(() => {
-    const cached =
-      localStorage.getItem("fullName") ||
-      localStorage.getItem("driverName") ||
-      "";
-    if (cached) setDriverName(cached);
-
     (async () => {
-      try {
-        if (!token) return;
-        const list = await listDrivers(token);
-        if (!Array.isArray(list) || list.length === 0) return;
+      const cachedName =
+        localStorage.getItem("fullName") ||
+        localStorage.getItem("driverName") ||
+        localStorage.getItem("firstname") ||
+        localStorage.getItem("firstName") ||
+        (isAdmin ? "Admin" : "Driver");
+      setRightName(cachedName);
 
-        const storedId =
-          Number(localStorage.getItem("driverId")) ||
-          Number(localStorage.getItem("userId"));
-
-        const match =
-          list.find(
-            (d) => Number(d.id) === storedId || Number(d.driverId) === storedId
-          ) || list[0];
-
-        const name = match?.fullName || match?.id?.toString() || "Driver";
-        setDriverName(name);
-      } catch {
-        /* ignore */
+      if (isAdmin && token) {
+        try {
+          const list = await listDrivers(token);
+          const opts =
+            (list || []).map((d: any) => ({
+              id: String(d.driverId ?? d.id ?? ""),
+              label: d.fullName
+                ? `${d.fullName} (${d.driverId ?? d.id ?? "-"})`
+                : String(d.driverId ?? d.id ?? "-"),
+            })) || [];
+          setDrivers(opts);
+          if (!selectedDriverId && opts.length > 0) {
+            setSelectedDriverId(String(opts[0].id));
+          }
+        } catch {
+          /* ignore */
+        }
       }
     })();
-  }, [token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, token]);
 
   const chooseFile = () => inputRef.current?.click();
 
@@ -67,9 +84,7 @@ const FileUploadForm: React.FC = () => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
     const ext = f.name.split(".").pop()?.toLowerCase();
-    return (
-      validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "")
-    );
+    return validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "");
   };
 
   const onFileChange = (f: File | null) => {
@@ -93,24 +108,30 @@ const FileUploadForm: React.FC = () => {
 
   const onUpload = async () => {
     if (!file || state === "loading") return;
-
     if (!token) {
       setStatus("❌ Not authorized. Please log in first.");
       return;
     }
 
-    const driverId = localStorage.getItem("driverId") ?? "";
+    const effectiveDriverId = isAdmin
+      ? selectedDriverId
+      : String(localStorage.getItem("driverId") ?? "");
+
+    if (!effectiveDriverId) {
+      setStatus("❌ Please select a driver.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("driverId", driverId);
+    formData.append("driverId", effectiveDriverId);
 
     setStatus("Uploading...");
     setState("loading");
     try {
       const res = await fetch(`${BASE_URL}/uploads`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` }, // IMPORTANT: don't set Content-Type for FormData
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -120,11 +141,8 @@ const FileUploadForm: React.FC = () => {
           const j = await res.json();
           if (j?.message)
             msg =
-              "❌ " +
-              (Array.isArray(j.message) ? j.message.join(", ") : j.message);
-        } catch {
-          /* ignore */
-        }
+              "❌ " + (Array.isArray(j.message) ? j.message.join(", ") : j.message);
+        } catch {}
         setStatus(msg);
         setState("idle");
         return;
@@ -142,7 +160,34 @@ const FileUploadForm: React.FC = () => {
   };
 
   return (
-    <AdminLayout title="Upload" variant="driver" rightNameOverride={driverName}>
+    <AdminLayout
+      title="Upload"
+      variant={isAdmin ? "admin" : "driver"}
+      rightNameOverride={rightName}
+    >
+      {/* Admin-only driver selector, centered and same width as upload card */}
+      {isAdmin && (
+        <div className="upload-narrow card p-3 mb-3">
+          <label className="form-label">Select Driver</label>
+          <select
+            className="form-select upload-select"
+            value={selectedDriverId}
+            onChange={(e) => setSelectedDriverId(e.target.value)}
+          >
+            {drivers.length === 0 ? (
+              <option value="">Loading drivers…</option>
+            ) : (
+              drivers.map((d) => (
+                <option key={String(d.id)} value={String(d.id)}>
+                  {d.label}
+                </option>
+              ))
+            )}
+          </select>
+        </div>
+      )}
+
+      {/* Upload card (unchanged) */}
       <div className="upload-wrapper">
         <div
           className={`drop-area ${state === "dragover" ? "is-drag" : ""}`}
@@ -197,7 +242,9 @@ const FileUploadForm: React.FC = () => {
           className="submit-btn"
           type="button"
           onClick={onUpload}
-          disabled={!file || state === "loading"}
+          disabled={
+            state === "loading" || !file || (isAdmin && !selectedDriverId)
+          }
         >
           {state === "loading" ? "Uploading…" : "Upload"}
         </button>

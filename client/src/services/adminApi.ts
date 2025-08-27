@@ -10,7 +10,7 @@ export type DriverReportRow = {
   mapsUrl?: string;
 };
 
-const BASE_URL = port ;
+const BASE_URL = port;
 
 export async function getDriverReport(opts: {
   driverId: number;
@@ -73,10 +73,7 @@ export async function exportDriverReport(opts: {
 }): Promise<Blob> {
   const { driverId, date, token } = opts;
 
-  const url = new URL(
-    "/report/export",
-    port
-  );
+  const url = new URL("/report/export", port);
   url.searchParams.set("driverId", String(driverId));
   url.searchParams.set("date", date);
 
@@ -162,4 +159,25 @@ export async function updateDriver(id: number, payload: Driver, token: string) {
     throw new Error(msg);
   }
   return await res.json();
+}
+export async function deleteDriverByDriverId(
+  driverId: string | number,
+  token: string
+): Promise<boolean> {
+  const idPart = encodeURIComponent(String(driverId));
+  const res = await fetch(`${BASE_URL}/drivers/${idPart}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    let msg = `Delete failed (${res.status})`;
+    try {
+      const j = await res.json();
+      if (j?.message)
+        msg = Array.isArray(j.message) ? j.message.join(", ") : j.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  return true;
 }

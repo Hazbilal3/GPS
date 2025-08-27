@@ -297,3 +297,12 @@
     padding: 10px;
   }
 }
+.upload-narrow {
+  max-width: 480px;
+  margin: 0 auto 16px;
+}
+
+.upload-select {
+  height: 44px;
+  border-radius: 12px;
+}
