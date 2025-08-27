@@ -5,6 +5,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import DriversPage from "./pages/Drivers";
 import FileUploadForm from "./components/FileUploadForm";
+import Register from "./pages/Register";
 
 function getRoleName(): "admin" | "driver" | "" {
   const raw = (
@@ -45,6 +46,8 @@ const App: React.FC = () => {
       <Routes>
         {/* Public */}
         <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
 
         {/* Admin-only */}
         <Route
