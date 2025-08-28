@@ -70,6 +70,7 @@ const Dashboard: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "match" | "mismatch"
   >("all");
+  const [globalQuery, setGlobalQuery] = useState("");
 
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [rows, setRows] = useState<DriverReportRow[]>([]);
@@ -82,6 +83,8 @@ const Dashboard: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const [queried, setQueried] = useState(false);
+
+  const [allRows, setAllRows] = useState<DriverReportRow[] | null>(null);
 
   const [showMap, setShowMap] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DriverReportRow | null>(null);
@@ -127,15 +130,6 @@ const Dashboard: React.FC = () => {
     return () => ac.abort();
   }, [token]);
 
-  const filteredRows = useMemo(() => {
-    if (statusFilter === "all") return rows;
-    return rows.filter((r) => {
-      const v = String(r.status || "").toLowerCase();
-      const isMatch = v === "match" || v === "matched";
-      return statusFilter === "match" ? isMatch : !isMatch;
-    });
-  }, [rows, statusFilter]);
-
   const driverName = useMemo(() => {
     const found = drivers.find((d) => String(d.id) === String(driverId));
     if (!found) return "";
@@ -143,32 +137,133 @@ const Dashboard: React.FC = () => {
     return idx > 0 ? found.label.slice(0, idx) : found.label;
   }, [drivers, driverId]);
 
-  const fetchReport = useCallback(async () => {
-    if (!queried || !driverId) return;
-    setLoading(true);
-    setError(null);
-    try {
+  const needAllRows = useMemo(
+    () => globalQuery.trim().length > 0 || statusFilter !== "all",
+    [globalQuery, statusFilter]
+  );
+
+  const fetchPage = useCallback(
+    async (pageArg: number, limitArg: number) => {
       const { rows: data, total: apiTotal } = await getDriverReport({
         driverId: Number(driverId),
         date,
-        page,
-        limit,
+        page: pageArg,
+        limit: limitArg,
         token,
       });
-      setRows((data ?? []) as DriverReportRow[]);
-      setTotal(typeof apiTotal === "number" ? apiTotal : (data ?? []).length);
+      return {
+        data: (data ?? []) as DriverReportRow[],
+        total: typeof apiTotal === "number" ? apiTotal : (data ?? []).length,
+      };
+    },
+    [driverId, date, token]
+  );
+
+  const fetchAll = useCallback(async () => {
+    const first = await fetchPage(1, 200);
+    let combined = [...first.data];
+    const totalCount = first.total;
+    const totalPagesNeeded = Math.max(1, Math.ceil(totalCount / 200));
+
+    for (let p = 2; p <= totalPagesNeeded; p++) {
+      const next = await fetchPage(p, 200);
+      combined = combined.concat(next.data);
+    }
+    return combined;
+  }, [fetchPage]);
+
+  const fetchReport = useCallback(async () => {
+    if (!queried || !driverId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (needAllRows) {
+        const all = await fetchAll();
+        setAllRows(all);
+        setRows(all);
+        setTotal(all.length);
+        setPage(1);
+      } else {
+        const { data, total: apiTotal } = await fetchPage(page, limit);
+        setAllRows(null);
+        setRows(data);
+        setTotal(apiTotal);
+      }
     } catch (err: any) {
-      setRows([]);
-      setTotal(0);
       setError(err?.message || "Failed to fetch data.");
+      setRows([]);
+      setAllRows(null);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [queried, driverId, date, page, limit, token]);
+  }, [queried, driverId, page, limit, needAllRows, fetchAll, fetchPage]);
 
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
+
+  const filteredRows: DriverReportRow[] = useMemo(() => {
+    const base = needAllRows ? allRows || [] : rows;
+
+    const byStatus =
+      statusFilter === "all"
+        ? base
+        : base.filter((r) => {
+            const v = String(r.status || "").toLowerCase();
+            const isMatch = v === "match" || v === "matched";
+            return statusFilter === "match" ? isMatch : !isMatch;
+          });
+
+    const q = globalQuery.trim().toLowerCase();
+    if (!q) return byStatus;
+
+    const contains = (val?: any) =>
+      String(val ?? "")
+        .toLowerCase()
+        .includes(q);
+
+    return byStatus.filter(
+      (r) =>
+        contains(r.barcode) ||
+        contains(r.address) ||
+        contains(r.lastGpsLocation) ||
+        contains(r.expectedLocation) ||
+        contains(r.status) ||
+        contains(r.distanceKm) ||
+        contains(r.mapsUrl)
+    );
+  }, [needAllRows, allRows, rows, statusFilter, globalQuery]);
+
+  const effectiveTotal = needAllRows ? filteredRows.length : total;
+  const effectiveTotalPages = Math.max(1, Math.ceil(effectiveTotal / limit));
+
+  useEffect(() => {
+    if (page > effectiveTotalPages) setPage(effectiveTotalPages);
+  }, [page, effectiveTotalPages]);
+
+  const pagedRows: DriverReportRow[] = useMemo(() => {
+    if (!needAllRows) return filteredRows;
+    const start = (page - 1) * limit;
+    return filteredRows.slice(start, start + limit);
+  }, [needAllRows, filteredRows, page, limit]);
+
+  const pageNumbers = useMemo(() => {
+    const tp = effectiveTotalPages;
+    const half = Math.floor(PAGE_WINDOW / 2);
+    let start = Math.max(1, page - half);
+    let end = Math.min(tp, start + PAGE_WINDOW - 1);
+    if (end - start + 1 < PAGE_WINDOW)
+      start = Math.max(1, end - PAGE_WINDOW + 1);
+    const out: number[] = [];
+    for (let i = start; i <= end; i++) out.push(i);
+    return out;
+  }, [page, effectiveTotalPages]);
+
+  const canPrev = page > 1;
+  const canNext = page < effectiveTotalPages;
 
   const handleSearch = useCallback(
     (e?: React.FormEvent) => {
@@ -246,20 +341,6 @@ const Dashboard: React.FC = () => {
     setShowMap(true);
   }, []);
 
-  const pageNumbers = useMemo(() => {
-    const half = Math.floor(PAGE_WINDOW / 2);
-    let start = Math.max(1, page - half);
-    let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
-    if (end - start + 1 < PAGE_WINDOW)
-      start = Math.max(1, end - PAGE_WINDOW + 1);
-    const out: number[] = [];
-    for (let i = start; i <= end; i++) out.push(i);
-    return out;
-  }, [page, totalPages]);
-
-  const canPrev = page > 1;
-  const canNext = page < totalPages;
-
   return (
     <AdminLayout title="Overview">
       <form onSubmit={handleSearch} className="card p-3">
@@ -300,7 +381,7 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          <div className="col-12 col-sm-5 col-md-5 d-flex gap-2">
+          <div className="col-12 col-md-5 d-flex gap-2 justify-content-end">
             <button type="submit" className="btn btn-primary flex-grow-1">
               Search
             </button>
@@ -316,24 +397,75 @@ const Dashboard: React.FC = () => {
               <button
                 className="btn btn-outline-secondary dropdown-toggle"
                 data-bs-toggle="dropdown"
+                data-bs-auto-close="outside"
                 type="button"
                 aria-expanded="false"
+                title="Filter & search"
               >
                 <LuSlidersHorizontal />
               </button>
-              <ul className="dropdown-menu dropdown-menu-end">
-                {(["all", "match", "mismatch"] as const).map((opt) => (
-                  <li key={opt}>
-                    <button
-                      className={`dropdown-item ${statusFilter === opt ? "active" : ""}`}
-                      type="button"
-                      onClick={() => setStatusFilter(opt)}
-                    >
-                      {opt[0].toUpperCase() + opt.slice(1)}
+
+              <div
+                className="dropdown-menu dropdown-menu-end p-2"
+                style={{ minWidth: 280 }}
+              >
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Search (any text/number)"
+                    value={globalQuery}
+                    onChange={(e) => setGlobalQuery(e.target.value)}
+                  />
+                  {/* <div className="d-grid mt-2">
+                    <button type="submit" className="btn btn-sm btn-primary">
+                      Search
                     </button>
-                  </li>
-                ))}
-              </ul>
+                  </div> */}
+                </form>
+
+                <hr className="dropdown-divider" />
+
+                <button
+                  className={`dropdown-item ${statusFilter === "all" ? "active" : ""}`}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("all");
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  className={`dropdown-item ${statusFilter === "match" ? "active" : ""}`}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("match");
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  Match
+                </button>
+                <button
+                  className={`dropdown-item ${statusFilter === "mismatch" ? "active" : ""}`}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("mismatch");
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  Mismatch
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -364,14 +496,14 @@ const Dashboard: React.FC = () => {
                     Loading…
                   </td>
                 </tr>
-              ) : filteredRows.length === 0 ? (
+              ) : (needAllRows ? filteredRows : rows).length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-4 text-center text-muted">
                     No data
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((r, i) => {
+                (needAllRows ? pagedRows : rows).map((r, i) => {
                   const isMatch = String(r.status || "")
                     .toLowerCase()
                     .startsWith("match");
@@ -415,7 +547,6 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
 
-        {/* footer / pagination */}
         <div className="table-footer d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2">
           <div className="d-flex align-items-center gap-2">
             <span className="text-muted">Rows per page</span>
@@ -471,9 +602,10 @@ const Dashboard: React.FC = () => {
                 </li>
               ))}
 
-              {pageNumbers[pageNumbers.length - 1] < totalPages && (
+              {pageNumbers[pageNumbers.length - 1] < effectiveTotalPages && (
                 <>
-                  {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+                  {pageNumbers[pageNumbers.length - 1] <
+                    effectiveTotalPages - 1 && (
                     <li className="page-item disabled">
                       <span className="page-link">…</span>
                     </li>
@@ -481,9 +613,9 @@ const Dashboard: React.FC = () => {
                   <li className="page-item">
                     <button
                       className="page-link"
-                      onClick={() => setPage(totalPages)}
+                      onClick={() => setPage(effectiveTotalPages)}
                     >
-                      {totalPages}
+                      {effectiveTotalPages}
                     </button>
                   </li>
                 </>
@@ -500,7 +632,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Map + Proof overlays remain unchanged */}
         {showMap && (
           <>
             <div
@@ -580,7 +711,7 @@ const Dashboard: React.FC = () => {
                 }}
               >
                 <div className="text-start">
-                  <div className="fw-bold mb-1">Info</div>
+                  <div className="fw-bold mb-1">Driver info</div>
                   <ul className="mb-0" style={{ paddingLeft: 18 }}>
                     <li>Driver ID: {driverId || "-"}</li>
                     <li>Driver Name: {driverName || "-"}</li>
@@ -597,8 +728,16 @@ const Dashboard: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="text-end text-muted">
-                  {selectedRow?.address || "—"}
+                <div className="text-end">
+                  <div className="fw-bold mb-1">Order info</div>
+                  <div className="small text-muted">
+                    <div>
+                      <strong>Barcode:</strong> {selectedRow?.barcode || "—"}
+                    </div>
+                    <div className="mt-1">
+                      <strong>Address:</strong> {selectedRow?.address || "—"}
+                    </div>
+                  </div>
                 </div>
               </div>
 
