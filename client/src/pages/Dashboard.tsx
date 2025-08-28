@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import {
   getDriverReport,
@@ -61,7 +67,9 @@ const Dashboard: React.FC = () => {
 
   const [driverId, setDriverId] = useState("");
   const [date, setDate] = useState(toYMD(new Date()));
-  const [statusFilter, setStatusFilter] = useState<"all" | "match" | "mismatch">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "match" | "mismatch"
+  >("all");
 
   const [drivers, setDrivers] = useState<DriverOption[]>([]);
   const [rows, setRows] = useState<DriverReportRow[]>([]);
@@ -70,6 +78,10 @@ const Dashboard: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const [total, setTotal] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+
+  const [queried, setQueried] = useState(false);
 
   const [showMap, setShowMap] = useState(false);
   const [selectedRow, setSelectedRow] = useState<DriverReportRow | null>(null);
@@ -92,7 +104,7 @@ const Dashboard: React.FC = () => {
         });
         if (!res.ok) throw new Error("Failed to fetch drivers");
         const data = await res.json();
-        const list = (Array.isArray(data) ? data : data?.data ?? [])
+        const list = (Array.isArray(data) ? data : (data?.data ?? []))
           .map((d: any) => {
             const id = Number(d.id ?? d.userId ?? d.driverId);
             if (Number.isNaN(id)) return null;
@@ -101,7 +113,12 @@ const Dashboard: React.FC = () => {
           .filter(Boolean) as DriverOption[];
         setDrivers(list);
       } catch (e) {
-        if (!(e instanceof DOMException && (e as DOMException).name === "AbortError")) {
+        if (
+          !(
+            e instanceof DOMException &&
+            (e as DOMException).name === "AbortError"
+          )
+        ) {
           console.error(e);
         }
       }
@@ -119,30 +136,6 @@ const Dashboard: React.FC = () => {
     });
   }, [rows, statusFilter]);
 
-  const totalPages = useMemo(
-    () => Math.max(1, Math.ceil(filteredRows.length / limit)),
-    [filteredRows.length, limit]
-  );
-
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [totalPages, page]);
-
-  const paginatedRows = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredRows.slice(start, start + limit);
-  }, [filteredRows, page, limit]);
-
-  const pageNumbers = useMemo(() => {
-    const half = Math.floor(PAGE_WINDOW / 2);
-    let start = Math.max(1, page - half);
-    let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
-    if (end - start + 1 < PAGE_WINDOW) start = Math.max(1, end - PAGE_WINDOW + 1);
-    const out: number[] = [];
-    for (let i = start; i <= end; i++) out.push(i);
-    return out;
-  }, [page, totalPages]);
-
   const driverName = useMemo(() => {
     const found = drivers.find((d) => String(d.id) === String(driverId));
     if (!found) return "";
@@ -150,36 +143,45 @@ const Dashboard: React.FC = () => {
     return idx > 0 ? found.label.slice(0, idx) : found.label;
   }, [drivers, driverId]);
 
+  const fetchReport = useCallback(async () => {
+    if (!queried || !driverId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { rows: data, total: apiTotal } = await getDriverReport({
+        driverId: Number(driverId),
+        date,
+        page,
+        limit,
+        token,
+      });
+      setRows((data ?? []) as DriverReportRow[]);
+      setTotal(typeof apiTotal === "number" ? apiTotal : (data ?? []).length);
+    } catch (err: any) {
+      setRows([]);
+      setTotal(0);
+      setError(err?.message || "Failed to fetch data.");
+    } finally {
+      setLoading(false);
+    }
+  }, [queried, driverId, date, page, limit, token]);
+
+  useEffect(() => {
+    fetchReport();
+  }, [fetchReport]);
+
   const handleSearch = useCallback(
-    async (e?: React.FormEvent) => {
+    (e?: React.FormEvent) => {
       e?.preventDefault();
       if (!driverId) {
         setError("Please select a driver.");
         return;
       }
       setError(null);
-      setLoading(true);
-      try {
-        const { rows: data } = await getDriverReport({
-          driverId: Number(driverId),
-          date,
-          page: 1,
-          limit: 10000, 
-          token,
-        });
-        setShowMap(false);
-        setShowProof(false);
-        setSelectedRow(null);
-        setRows((data ?? []) as DriverReportRow[]);
-        setPage(1);
-      } catch (err: any) {
-        setRows([]);
-        setError(err?.message || "Failed to fetch data.");
-      } finally {
-        setLoading(false);
-      }
+      setQueried(true);
+      setPage(1);
     },
-    [driverId, date, token]
+    [driverId]
   );
 
   const handleExport = useCallback(async () => {
@@ -189,7 +191,11 @@ const Dashboard: React.FC = () => {
     }
     setError(null);
     try {
-      const blob = await exportDriverReport({ driverId: Number(driverId), date, token });
+      const blob = await exportDriverReport({
+        driverId: Number(driverId),
+        date,
+        token,
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -212,9 +218,11 @@ const Dashboard: React.FC = () => {
     if (card && rowEl) {
       const cardRect = card.getBoundingClientRect();
       const rowRect = rowEl.getBoundingClientRect();
-
       let desiredTop = rowRect.top - cardRect.top - 8;
-      const maxTop = Math.max(PANEL_PADDING, card.clientHeight - PANEL_H - PANEL_PADDING);
+      const maxTop = Math.max(
+        PANEL_PADDING,
+        card.clientHeight - PANEL_H - PANEL_PADDING
+      );
       desiredTop = Math.min(Math.max(desiredTop, PANEL_PADDING), maxTop);
       setPanelTop(desiredTop);
 
@@ -222,10 +230,14 @@ const Dashboard: React.FC = () => {
       const viewportTop = window.scrollY;
       const viewportBottom = viewportTop + window.innerHeight;
       const outOfView =
-        absolutePanelTop < viewportTop + 80 || absolutePanelTop > viewportBottom - PANEL_H - 40;
+        absolutePanelTop < viewportTop + 80 ||
+        absolutePanelTop > viewportBottom - PANEL_H - 40;
 
       if (outOfView) {
-        window.scrollTo({ top: window.scrollY + absolutePanelTop - 80, behavior: "smooth" });
+        window.scrollTo({
+          top: window.scrollY + absolutePanelTop - 80,
+          behavior: "smooth",
+        });
       }
     } else {
       setPanelTop(PANEL_PADDING);
@@ -233,6 +245,17 @@ const Dashboard: React.FC = () => {
 
     setShowMap(true);
   }, []);
+
+  const pageNumbers = useMemo(() => {
+    const half = Math.floor(PAGE_WINDOW / 2);
+    let start = Math.max(1, page - half);
+    let end = Math.min(totalPages, start + PAGE_WINDOW - 1);
+    if (end - start + 1 < PAGE_WINDOW)
+      start = Math.max(1, end - PAGE_WINDOW + 1);
+    const out: number[] = [];
+    for (let i = start; i <= end; i++) out.push(i);
+    return out;
+  }, [page, totalPages]);
 
   const canPrev = page > 1;
   const canNext = page < totalPages;
@@ -281,7 +304,11 @@ const Dashboard: React.FC = () => {
             <button type="submit" className="btn btn-primary flex-grow-1">
               Search
             </button>
-            <button type="button" className="btn btn-outline-primary" onClick={handleExport}>
+            <button
+              type="button"
+              className="btn btn-outline-primary"
+              onClick={handleExport}
+            >
               Export csv
             </button>
 
@@ -300,10 +327,7 @@ const Dashboard: React.FC = () => {
                     <button
                       className={`dropdown-item ${statusFilter === opt ? "active" : ""}`}
                       type="button"
-                      onClick={() => {
-                        setStatusFilter(opt);
-                        setPage(1);
-                      }}
+                      onClick={() => setStatusFilter(opt)}
                     >
                       {opt[0].toUpperCase() + opt.slice(1)}
                     </button>
@@ -314,7 +338,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {error && <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>}
+        {error && (
+          <div className="alert alert-danger py-2 mt-3 mb-0">{error}</div>
+        )}
       </form>
 
       <div ref={cardRef} className="card mt-3 position-relative">
@@ -338,15 +364,17 @@ const Dashboard: React.FC = () => {
                     Loading…
                   </td>
                 </tr>
-              ) : paginatedRows.length === 0 ? (
+              ) : filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-4 text-center text-muted">
                     No data
                   </td>
                 </tr>
               ) : (
-                paginatedRows.map((r, i) => {
-                  const isMatch = String(r.status || "").toLowerCase().startsWith("match");
+                filteredRows.map((r, i) => {
+                  const isMatch = String(r.status || "")
+                    .toLowerCase()
+                    .startsWith("match");
                   const rowKey = String(r.barcode ?? `row-${i}`);
 
                   return (
@@ -365,9 +393,7 @@ const Dashboard: React.FC = () => {
                       <td>{r.distanceKm ?? ""}</td>
                       <td>
                         <span
-                          className={`status-badge ${
-                            isMatch ? "status-match" : "status-mismatch"
-                          }`}
+                          className={`status-badge ${isMatch ? "status-match" : "status-mismatch"}`}
                         >
                           {isMatch ? "Match" : "Mismatch"}
                         </span>
@@ -389,6 +415,7 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
 
+        {/* footer / pagination */}
         <div className="table-footer d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2">
           <div className="d-flex align-items-center gap-2">
             <span className="text-muted">Rows per page</span>
@@ -434,7 +461,10 @@ const Dashboard: React.FC = () => {
               )}
 
               {pageNumbers.map((n) => (
-                <li key={n} className={`page-item ${n === page ? "active" : ""}`}>
+                <li
+                  key={n}
+                  className={`page-item ${n === page ? "active" : ""}`}
+                >
                   <button className="page-link" onClick={() => setPage(n)}>
                     {n}
                   </button>
@@ -449,7 +479,10 @@ const Dashboard: React.FC = () => {
                     </li>
                   )}
                   <li className="page-item">
-                    <button className="page-link" onClick={() => setPage(totalPages)}>
+                    <button
+                      className="page-link"
+                      onClick={() => setPage(totalPages)}
+                    >
                       {totalPages}
                     </button>
                   </li>
@@ -467,6 +500,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Map + Proof overlays remain unchanged */}
         {showMap && (
           <>
             <div
@@ -563,7 +597,9 @@ const Dashboard: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="text-end text-muted">{selectedRow?.address || "—"}</div>
+                <div className="text-end text-muted">
+                  {selectedRow?.address || "—"}
+                </div>
               </div>
 
               {showProof && (
@@ -602,7 +638,10 @@ const Dashboard: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="p-3" style={{ maxHeight: MAP_HEIGHT, overflow: "auto" }}>
+                    <div
+                      className="p-3"
+                      style={{ maxHeight: MAP_HEIGHT, overflow: "auto" }}
+                    >
                       <img
                         src={
                           selectedRow?.proofImage ||
@@ -611,15 +650,27 @@ const Dashboard: React.FC = () => {
                           "https://smartroutes.io/blogs/content/images/2024/04/Electronic-Proof-of-Delivery--ePOD-.png"
                         }
                         alt="Delivery proof"
-                        style={{ width: "100%", height: 250, borderRadius: 12, display: "block" }}
+                        style={{
+                          width: "100%",
+                          height: 250,
+                          borderRadius: 12,
+                          display: "block",
+                        }}
                       />
                       <div className="mt-3 small text-muted">
-                        <strong>GPS Location:</strong> {selectedRow?.lastGpsLocation || "—"}
+                        <strong>GPS Location:</strong>{" "}
+                        {selectedRow?.lastGpsLocation || "—"}
                       </div>
                     </div>
 
-                    <div className="px-3 py-2 d-flex justify-content-end" style={{ borderTop: "1px solid #e9eef5" }}>
-                      <button className="btn btn-outline-secondary" onClick={() => setShowProof(false)}>
+                    <div
+                      className="px-3 py-2 d-flex justify-content-end"
+                      style={{ borderTop: "1px solid #e9eef5" }}
+                    >
+                      <button
+                        className="btn btn-outline-secondary"
+                        onClick={() => setShowProof(false)}
+                      >
                         Close
                       </button>
                     </div>
