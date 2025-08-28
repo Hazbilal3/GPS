@@ -189,11 +189,15 @@ const Login: React.FC = () => {
             <div className="text-danger small">{fieldErrors.password}</div>
           )}
 
-          <div className="mt-2 mb-3 text-end">
-            <a href="#" className="text-decoration-none">
-              Forgot password?
-            </a>
-          </div>
+ <div className="mt-2 mb-3 text-end">
+  <button
+    type="button"
+    className="btn btn-link p-0 text-decoration-none"
+    onClick={() => navigate("/forgot-password", { state: { role } })}
+  >
+    Forgot password?
+  </button>
+</div>
 
           {error && <div className="alert alert-danger py-2">{error}</div>}
 
