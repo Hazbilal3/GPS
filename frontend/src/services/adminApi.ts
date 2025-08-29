@@ -119,7 +119,10 @@ export async function listDrivers(token: string): Promise<Driver[]> {
   }));
 }
 
-export async function createDriver(payload: Driver, token: string) {
+export async function createDriver(
+  payload: Driver & { password?: string },
+  token: string
+) {
   const res = await fetch(`${BASE_URL}/drivers`, {
     method: "POST",
     headers: {
@@ -140,14 +143,19 @@ export async function createDriver(payload: Driver, token: string) {
   return await res.json();
 }
 
-export async function updateDriver(id: number, payload: Driver, token: string) {
-  const res = await fetch(`${BASE_URL}/drivers/${id}`, {
-    method: "PUT",
+export async function updateDriverByDriverId(
+  driverId: string | number,
+  patch: Partial<Driver & { password?: string; userRole?: number }>,
+  token: string
+) {
+  const idPart = encodeURIComponent(String(driverId));
+  const res = await fetch(`${BASE_URL}/drivers/${idPart}`, {
+    method: "PATCH",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(patch),
   });
   if (!res.ok) {
     let msg = `Update failed (${res.status})`;
@@ -160,6 +168,7 @@ export async function updateDriver(id: number, payload: Driver, token: string) {
   }
   return await res.json();
 }
+
 export async function deleteDriverByDriverId(
   driverId: string | number,
   token: string

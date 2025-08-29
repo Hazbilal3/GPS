@@ -149,7 +149,9 @@ const Register: React.FC = () => {
         <h1 className="stack-title">Driver sign up</h1>
 
         <div className="mb-3" style={{ maxWidth: 420, margin: "0 auto" }}>
-          <label className="form-label">Driver ID</label>
+          <label className="form-label" style={{ color: "#65666d" }}>
+            Driver ID
+          </label>
           <input
             type="text"
             inputMode="numeric"

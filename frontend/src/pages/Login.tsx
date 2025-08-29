@@ -209,9 +209,11 @@ const Login: React.FC = () => {
             {submitting ? "Logging in..." : "Login"}
           </button>
 
-          <p className="text-center mb-0 mt-3 text-black">
-            Not a member? <Link to="/register">Signup now</Link>
-          </p>
+          {role === "driver" && (
+            <p className="text-center mb-0 mt-3 text-black">
+              Not a member? <Link to="/register">Signup now</Link>
+            </p>
+          )}
         </form>
       </div>
     </div>
