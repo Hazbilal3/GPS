@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import cmjlLogo from "../assets/pics/bg-logo.png";
 import cornerArt from "../assets/pics/Signup-img.png";
 import { port } from "../port.interface";
 
-// --- helpers: API + utils ---
 async function registerUser(payload: Record<string, any>): Promise<boolean> {
   try {
     const baseUrl = port;
@@ -19,11 +18,8 @@ async function registerUser(payload: Record<string, any>): Promise<boolean> {
   }
 }
 
-// remove all non-digits
 const digitsOnly = (s: string) => s.replace(/\D/g, "");
-// check if string contains only 0-9 and at least one digit
 const isAllDigits = (s: string) => /^\d+$/.test(s);
-// keydown guard to prevent non-digit keys (while allowing nav keys & shortcuts)
 const handleDigitKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
   const allowed = [
     "Backspace",
@@ -34,10 +30,14 @@ const handleDigitKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     "Home",
     "End",
   ];
-  if (e.ctrlKey || e.metaKey) return; // allow copy/paste/select all shortcuts
+  if (e.ctrlKey || e.metaKey) return;
   if (allowed.includes(e.key)) return;
   if (!/^\d$/.test(e.key)) e.preventDefault();
 };
+
+const hasMinLen = (s: string) => s.length >= 8;
+const hasNumber = (s: string) => /\d/.test(s);
+const hasSpecial = (s: string) => /[^A-Za-z0-9]/.test(s);
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -53,6 +53,17 @@ const Register: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const passChecks = useMemo(
+    () => ({
+      min: hasMinLen(password),
+      num: hasNumber(password),
+      special: hasSpecial(password),
+    }),
+    [password]
+  );
+  const isPasswordValid =
+    passChecks.min && passChecks.num && passChecks.special;
 
   const validateForm = () => {
     const errs: Record<string, string> = {};
@@ -71,7 +82,7 @@ const Register: React.FC = () => {
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = "Invalid email format.";
 
     if (!password.trim()) errs.password = "Password is required.";
-    else if (!/^(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(password))
+    else if (!isPasswordValid)
       errs.password =
         "Password must be at least 8 characters and include a number and a special character.";
 
@@ -89,9 +100,9 @@ const Register: React.FC = () => {
       email,
       password,
       userRole: 2,
-      driverId: Number(driverId),     // NOTE: leading zeros will be dropped by Number(...)
+      driverId: Number(driverId),
       fullName,
-      phoneNumber: String(phone),     // same note as above
+      phoneNumber: String(phone),
     };
 
     const ok = await registerUser(payload);
@@ -100,6 +111,30 @@ const Register: React.FC = () => {
     if (ok) navigate("/");
     else setError("Registration failed. Please try again.");
   };
+
+  const RuleRow: React.FC<{ ok: boolean; label: string }> = ({ ok, label }) => (
+    <div
+      className={`d-flex align-items-center gap-2 small ${
+        ok ? "text-success" : "text-danger"
+      }`}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-grid",
+          placeItems: "center",
+          width: 18,
+          height: 18,
+          borderRadius: 999,
+          border: `1px solid ${ok ? "#16a34a" : "#dc2626"}`,
+          fontSize: 11,
+        }}
+      >
+        {ok ? "✓" : "✗"}
+      </span>
+      <span>{label}</span>
+    </div>
+  );
 
   return (
     <div
@@ -113,7 +148,6 @@ const Register: React.FC = () => {
         <img src={cmjlLogo} className="stack-logo" alt="CMJL" />
         <h1 className="stack-title">Driver sign up</h1>
 
-        {/* DRIVER ID (digits only) */}
         <div className="mb-3" style={{ maxWidth: 420, margin: "0 auto" }}>
           <label className="form-label">Driver ID</label>
           <input
@@ -121,7 +155,9 @@ const Register: React.FC = () => {
             inputMode="numeric"
             pattern="[0-9]*"
             maxLength={20}
-            className={`form-control ${fieldErrors.driverId ? "is-invalid" : ""}`}
+            className={`form-control ${
+              fieldErrors.driverId ? "is-invalid" : ""
+            }`}
             placeholder="Enter your Driver ID"
             style={{ padding: "0.75rem 1rem", borderRadius: "12px" }}
             value={driverId}
@@ -129,7 +165,9 @@ const Register: React.FC = () => {
             onChange={(e) => setDriverId(digitsOnly(e.target.value))}
             onPaste={(e) => {
               e.preventDefault();
-              const pasted = (e.clipboardData || (window as any).clipboardData).getData("text");
+              const pasted = (
+                e.clipboardData || (window as any).clipboardData
+              ).getData("text");
               setDriverId(digitsOnly(pasted));
             }}
           />
@@ -144,7 +182,9 @@ const Register: React.FC = () => {
               <label className="form-label">Full name</label>
               <input
                 type="text"
-                className={`form-control ${fieldErrors.fullName ? "is-invalid" : ""}`}
+                className={`form-control ${
+                  fieldErrors.fullName ? "is-invalid" : ""
+                }`}
                 placeholder="Enter your Full Name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -154,7 +194,6 @@ const Register: React.FC = () => {
               )}
             </div>
 
-            {/* PHONE (digits only) */}
             <div>
               <label className="form-label">Phone number</label>
               <input
@@ -162,14 +201,18 @@ const Register: React.FC = () => {
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={20}
-                className={`form-control ${fieldErrors.phone ? "is-invalid" : ""}`}
+                className={`form-control ${
+                  fieldErrors.phone ? "is-invalid" : ""
+                }`}
                 placeholder="Enter your Phone Number"
                 value={phone}
                 onKeyDown={handleDigitKeyDown}
                 onChange={(e) => setPhone(digitsOnly(e.target.value))}
                 onPaste={(e) => {
                   e.preventDefault();
-                  const pasted = (e.clipboardData || (window as any).clipboardData).getData("text");
+                  const pasted = (
+                    e.clipboardData || (window as any).clipboardData
+                  ).getData("text");
                   setPhone(digitsOnly(pasted));
                 }}
               />
@@ -184,7 +227,9 @@ const Register: React.FC = () => {
               <label className="form-label">Email address</label>
               <input
                 type="email"
-                className={`form-control ${fieldErrors.email ? "is-invalid" : ""}`}
+                className={`form-control ${
+                  fieldErrors.email ? "is-invalid" : ""
+                }`}
                 placeholder="Enter your Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -199,7 +244,9 @@ const Register: React.FC = () => {
               <div className="position-relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  className={`form-control ${fieldErrors.password ? "is-invalid" : ""}`}
+                  className={`form-control ${
+                    fieldErrors.password ? "is-invalid" : ""
+                  }`}
                   placeholder="Enter the Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -217,8 +264,38 @@ const Register: React.FC = () => {
                   )}
                 </button>
               </div>
+
+              {password.length > 0 && (
+                <div className="mt-2">
+                  <div
+                    className={`d-flex align-items-center gap-2 small ${
+                      passChecks.min ? "text-success" : "text-danger"
+                    }`}
+                  >
+                    {passChecks.min ? "✓" : "✗"} At least 8 characters
+                  </div>
+                  <div
+                    className={`d-flex align-items-center gap-2 small ${
+                      passChecks.num ? "text-success" : "text-danger"
+                    }`}
+                  >
+                    {passChecks.num ? "✓" : "✗"} Contains at least one number
+                  </div>
+                  <div
+                    className={`d-flex align-items-center gap-2 small ${
+                      passChecks.special ? "text-success" : "text-danger"
+                    }`}
+                  >
+                    {passChecks.special ? "✓" : "✗"} Contains at least one
+                    special character
+                  </div>
+                </div>
+              )}
+
               {fieldErrors.password && (
-                <div className="text-danger small">{fieldErrors.password}</div>
+                <div className="text-danger small mt-1">
+                  {fieldErrors.password}
+                </div>
               )}
             </div>
           </div>

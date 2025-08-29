@@ -3,11 +3,8 @@ import { NavLink, useNavigate } from "react-router-dom";
 import {
   LuLayoutGrid,
   LuUsers,
-  // LuTrendingUp,
-  // LuFolder,
   LuUpload,
-  // LuSettings,
-  LuUser   ,
+  LuUser,
   LuLogOut,
   LuMenu,
 } from "react-icons/lu";
@@ -78,15 +75,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   const adminMenu: MenuItem[] = [
     { to: "/dashboard", label: "Overview", icon: <LuLayoutGrid /> },
     { to: "/drivers", label: "Drivers", icon: <LuUsers /> },
-    // { to: "/dashboard", label: "Results", icon: <LuTrendingUp /> },
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
-    // { to: "/dashboard", label: "Files", icon: <LuFolder /> },
-    // { to: "/settings", label: "Settings", icon: <LuSettings /> },
   ];
 
   const driverMenu: MenuItem[] = [
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
-    // { to: "/settings", label: "Settings", icon: <LuSettings /> },
   ];
 
   const menuItems = useMemo(
@@ -188,9 +181,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             <h1>Welcome to CMJL</h1>
           </div>
           <div className="topbar-right">
-            <div className="profile-avatar" >
-                <LuUser   />
-  </div>
+            <div className="profile-avatar">
+              <LuUser />
+            </div>
             <div className="profile-name">{rightName}</div>
           </div>
         </header>

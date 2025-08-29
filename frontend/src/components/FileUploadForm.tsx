@@ -126,7 +126,7 @@ useEffect(() => {
     formData.append("file", file);
     formData.append("driverId", effectiveDriverId);
 
-    setStatus("Uploading...");
+    setStatus("Uploading file, please wait a moment.");
     setState("loading");
     try {
       const res = await fetch(`${BASE_URL}/uploads`, {

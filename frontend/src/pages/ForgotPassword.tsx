@@ -26,6 +26,8 @@ const ForgotPassword: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ const ForgotPassword: React.FC = () => {
       await forgotSendCode(res.userId);
       setStep("verify");
     } catch (err: any) {
-      setStatus(err.message || "Lookup failed");
+      setStatus(err.message || "Data not found");
     } finally {
       setLoading(false);
     }
@@ -132,21 +134,65 @@ const ForgotPassword: React.FC = () => {
         {step === "reset" && (
           <form onSubmit={handleReset}>
             <label className="form-label">New Password</label>
-            <input
-              type="password"
-              className="form-control mb-2"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
+            <div className="position-relative mb-2">
+              <input
+                type={showNewPassword ? "text" : "password"}
+                className="form-control"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="btn btn-link eye-btn"
+                onClick={() => setShowNewPassword((s) => !s)}
+                aria-label={showNewPassword ? "Hide password" : "Show password"}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
+              >
+                {showNewPassword ? (
+                  <i className="fa-solid fa-eye"></i>
+                ) : (
+                  <i className="fa-solid fa-eye-slash"></i>
+                )}
+              </button>
+            </div>
+
             <label className="form-label">Confirm Password</label>
-            <input
-              type="password"
-              className="form-control mb-3"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
+            <div className="position-relative mb-3">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                className="form-control"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="btn btn-link eye-btn"
+                onClick={() => setShowConfirmPassword((s) => !s)}
+                aria-label={
+                  showConfirmPassword ? "Hide password" : "Show password"
+                }
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
+              >
+                {showConfirmPassword ? (
+                  <i className="fa-solid fa-eye"></i>
+                ) : (
+                  <i className="fa-solid fa-eye-slash"></i>
+                )}
+              </button>
+            </div>
+
             <button className="btn btn-primary w-100" disabled={loading}>
               {loading ? "Resetting..." : "Reset Password"}
             </button>

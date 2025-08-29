@@ -141,7 +141,6 @@ const DriversPage: React.FC = () => {
         </div>
       )}
 
-      {/* Delete confirm modal (reuses your upload modal style) */}
       {confirmOpen && target && (
         <div
           className="modal-overlay"

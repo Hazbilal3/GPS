@@ -107,7 +107,7 @@ const Dashboard: React.FC = () => {
         });
         if (!res.ok) throw new Error("Failed to fetch drivers");
         const data = await res.json();
-        const list = (Array.isArray(data) ? data : (data?.data ?? []))
+        const list = (Array.isArray(data) ? data : data?.data ?? [])
           .map((d: any) => {
             const id = Number(d.id ?? d.userId ?? d.driverId);
             if (Number.isNaN(id)) return null;
@@ -419,7 +419,7 @@ const Dashboard: React.FC = () => {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Search (any text/number)"
+                    placeholder="Search"
                     value={globalQuery}
                     onChange={(e) => setGlobalQuery(e.target.value)}
                   />
@@ -433,7 +433,9 @@ const Dashboard: React.FC = () => {
                 <hr className="dropdown-divider" />
 
                 <button
-                  className={`dropdown-item ${statusFilter === "all" ? "active" : ""}`}
+                  className={`dropdown-item ${
+                    statusFilter === "all" ? "active" : ""
+                  }`}
                   type="button"
                   onClick={() => {
                     setStatusFilter("all");
@@ -444,7 +446,9 @@ const Dashboard: React.FC = () => {
                   All
                 </button>
                 <button
-                  className={`dropdown-item ${statusFilter === "match" ? "active" : ""}`}
+                  className={`dropdown-item ${
+                    statusFilter === "match" ? "active" : ""
+                  }`}
                   type="button"
                   onClick={() => {
                     setStatusFilter("match");
@@ -455,7 +459,9 @@ const Dashboard: React.FC = () => {
                   Match
                 </button>
                 <button
-                  className={`dropdown-item ${statusFilter === "mismatch" ? "active" : ""}`}
+                  className={`dropdown-item ${
+                    statusFilter === "mismatch" ? "active" : ""
+                  }`}
                   type="button"
                   onClick={() => {
                     setStatusFilter("mismatch");
@@ -525,7 +531,9 @@ const Dashboard: React.FC = () => {
                       <td>{r.distanceKm ?? ""}</td>
                       <td>
                         <span
-                          className={`status-badge ${isMatch ? "status-match" : "status-mismatch"}`}
+                          className={`status-badge ${
+                            isMatch ? "status-match" : "status-mismatch"
+                          }`}
                         >
                           {isMatch ? "Match" : "Mismatch"}
                         </span>
