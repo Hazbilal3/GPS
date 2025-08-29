@@ -80,10 +80,8 @@ const Dashboard: React.FC = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const [queried, setQueried] = useState(false);
-
   const [allRows, setAllRows] = useState<DriverReportRow[] | null>(null);
 
   const [showMap, setShowMap] = useState(false);
@@ -164,7 +162,6 @@ const Dashboard: React.FC = () => {
     let combined = [...first.data];
     const totalCount = first.total;
     const totalPagesNeeded = Math.max(1, Math.ceil(totalCount / 200));
-
     for (let p = 2; p <= totalPagesNeeded; p++) {
       const next = await fetchPage(p, 200);
       combined = combined.concat(next.data);
@@ -341,6 +338,30 @@ const Dashboard: React.FC = () => {
     setShowMap(true);
   }, []);
 
+  const clearFilters = () => {
+    setGlobalQuery("");
+    setStatusFilter("all");
+    setPage(1);
+    setQueried(true);
+  };
+
+  const clearSelection = () => {
+    setGlobalQuery("");
+    setStatusFilter("all");
+    setPage(1);
+
+    setDriverId("");
+    setRows([]);
+    setAllRows(null);
+    setTotal(0);
+
+    setQueried(true);
+
+    setError(null);
+    setShowMap(false);
+    setShowProof(false);
+  };
+
   return (
     <AdminLayout title="Overview">
       <form onSubmit={handleSearch} className="card p-3">
@@ -423,11 +444,6 @@ const Dashboard: React.FC = () => {
                     value={globalQuery}
                     onChange={(e) => setGlobalQuery(e.target.value)}
                   />
-                  {/* <div className="d-grid mt-2">
-                    <button type="submit" className="btn btn-sm btn-primary">
-                      Search
-                    </button>
-                  </div> */}
                 </form>
 
                 <hr className="dropdown-divider" />
@@ -471,6 +487,17 @@ const Dashboard: React.FC = () => {
                 >
                   Mismatch
                 </button>
+
+                <div className="d-grid mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={clearFilters}
+                    title="Clear search & status"
+                  >
+                    Clear filters
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -482,6 +509,17 @@ const Dashboard: React.FC = () => {
       </form>
 
       <div ref={cardRef} className="card mt-3 position-relative">
+        <button
+          type="button"
+          className="btn btn-sm btn-light position-absolute"
+          style={{ top: -13, right: 0, padding: "1px 4px", lineHeight: 1 }}
+          title="Clear selection"
+          onClick={clearSelection}
+          aria-label="Clear selection"
+        >
+          <LuX />
+        </button>
+
         <div className="table-responsive">
           <table className="table table-borderless align-middle mb-0 custom-table">
             <thead>
@@ -555,90 +593,16 @@ const Dashboard: React.FC = () => {
           </table>
         </div>
 
-        <div className="table-footer d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2">
-          <div className="d-flex align-items-center gap-2">
-            <span className="text-muted">Rows per page</span>
-            <select
-              className="form-select form-select-sm w-auto"
-              value={limit}
-              onChange={(e) => {
-                setLimit(Number(e.target.value));
-                setPage(1);
-              }}
-            >
-              {[10, 20, 50, 100].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="pagination-bar d-flex align-items-center gap-2">
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              disabled={!canPrev}
-              onClick={() => canPrev && setPage((p) => p - 1)}
-            >
-              ‹ Previous
-            </button>
-
-            <ul className="pagination pagination-sm mb-0">
-              {pageNumbers[0] > 1 && (
-                <>
-                  <li className="page-item">
-                    <button className="page-link" onClick={() => setPage(1)}>
-                      1
-                    </button>
-                  </li>
-                  {pageNumbers[0] > 2 && (
-                    <li className="page-item disabled">
-                      <span className="page-link">…</span>
-                    </li>
-                  )}
-                </>
-              )}
-
-              {pageNumbers.map((n) => (
-                <li
-                  key={n}
-                  className={`page-item ${n === page ? "active" : ""}`}
-                >
-                  <button className="page-link" onClick={() => setPage(n)}>
-                    {n}
-                  </button>
-                </li>
-              ))}
-
-              {pageNumbers[pageNumbers.length - 1] < effectiveTotalPages && (
-                <>
-                  {pageNumbers[pageNumbers.length - 1] <
-                    effectiveTotalPages - 1 && (
-                    <li className="page-item disabled">
-                      <span className="page-link">…</span>
-                    </li>
-                  )}
-                  <li className="page-item">
-                    <button
-                      className="page-link"
-                      onClick={() => setPage(effectiveTotalPages)}
-                    >
-                      {effectiveTotalPages}
-                    </button>
-                  </li>
-                </>
-              )}
-            </ul>
-
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              disabled={!canNext}
-              onClick={() => canNext && setPage((p) => p + 1)}
-            >
-              Next ›
-            </button>
-          </div>
-        </div>
+        <PaginationBar
+          limit={limit}
+          setLimit={setLimit}
+          page={page}
+          setPage={setPage}
+          canPrev={canPrev}
+          canNext={canNext}
+          pageNumbers={pageNumbers}
+          totalPages={effectiveTotalPages}
+        />
 
         {showMap && (
           <>
@@ -831,5 +795,103 @@ const Dashboard: React.FC = () => {
     </AdminLayout>
   );
 };
+
+const PaginationBar: React.FC<{
+  limit: number;
+  setLimit: (n: number) => void;
+  page: number;
+  setPage: (n: number) => void;
+  canPrev: boolean;
+  canNext: boolean;
+  pageNumbers: number[];
+  totalPages: number;
+}> = ({
+  limit,
+  setLimit,
+  page,
+  setPage,
+  canPrev,
+  canNext,
+  pageNumbers,
+  totalPages,
+}) => (
+  <div className="table-footer d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-2">
+    <div className="d-flex align-items-center gap-2">
+      <span className="text-muted">Rows per page</span>
+      <select
+        className="form-select form-select-sm w-auto"
+        value={limit}
+        onChange={(e) => {
+          setLimit(Number(e.target.value));
+          setPage(1);
+        }}
+      >
+        {[10, 20, 50, 100].map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="pagination-bar d-flex align-items-center gap-2">
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={!canPrev}
+        onClick={() => canPrev && setPage(page - 1)}
+      >
+        ‹ Previous
+      </button>
+
+      <ul className="pagination pagination-sm mb-0">
+        {pageNumbers[0] > 1 && (
+          <>
+            <li className="page-item">
+              <button className="page-link" onClick={() => setPage(1)}>
+                1
+              </button>
+            </li>
+            {pageNumbers[0] > 2 && (
+              <li className="page-item disabled">
+                <span className="page-link">…</span>
+              </li>
+            )}
+          </>
+        )}
+
+        {pageNumbers.map((n) => (
+          <li key={n} className={`page-item ${n === page ? "active" : ""}`}>
+            <button className="page-link" onClick={() => setPage(n)}>
+              {n}
+            </button>
+          </li>
+        ))}
+
+        {pageNumbers[pageNumbers.length - 1] < totalPages && (
+          <>
+            {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+              <li className="page-item disabled">
+                <span className="page-link">…</span>
+              </li>
+            )}
+            <li className="page-item">
+              <button className="page-link" onClick={() => setPage(totalPages)}>
+                {totalPages}
+              </button>
+            </li>
+          </>
+        )}
+      </ul>
+
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        disabled={!canNext}
+        onClick={() => canNext && setPage(page + 1)}
+      >
+        Next ›
+      </button>
+    </div>
+  </div>
+);
 
 export default Dashboard;
