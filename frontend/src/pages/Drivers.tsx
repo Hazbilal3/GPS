@@ -315,12 +315,7 @@ const DriversPage: React.FC = () => {
       )}
 
       {confirmOpen && target && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeDelete}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true">
           <div
             className="modal-content modal-danger"
             onClick={(e) => e.stopPropagation()}
@@ -378,12 +373,7 @@ const DriversPage: React.FC = () => {
       )}
 
       {formOpen && (
-        <div
-          className="modal-overlay"
-          role="dialog"
-          aria-modal="true"
-          onClick={closeForm}
-        >
+        <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-2">
               {mode === "create" ? "Add Driver" : "Edit Driver"}
