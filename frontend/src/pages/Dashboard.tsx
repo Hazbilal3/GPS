@@ -43,8 +43,10 @@ function toEmbedUrl(row: DriverReportRow): string {
   if (raw && /\/maps\/embed/i.test(raw)) return raw;
 
   const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-  const origin = (row.lastGpsLocation || "").trim();
-  const destination = (row.address || row.expectedLocation || "").trim();
+
+  const origin = (row.lastGpsLocation || "").toString().trim();
+
+  const destination = (row.expectedLocation || "").toString().trim();
 
   if (API_KEY && origin && destination) {
     return `https://www.google.com/maps/embed/v1/directions?key=${API_KEY}&origin=${encodeURIComponent(
@@ -52,7 +54,7 @@ function toEmbedUrl(row: DriverReportRow): string {
     )}&destination=${encodeURIComponent(destination)}&mode=driving`;
   }
 
-  const single = destination || origin;
+  const single = destination || origin || (row.address || "").toString().trim();
   if (API_KEY && single) {
     return `https://www.google.com/maps/embed/v1/place?key=${API_KEY}&q=${encodeURIComponent(
       single

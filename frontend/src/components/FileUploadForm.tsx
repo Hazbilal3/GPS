@@ -5,15 +5,23 @@ import "../assets/components-css/FileUploadForm.css";
 import { port as PORT_BASE } from "../port.interface";
 
 function getRoleName(): "admin" | "driver" | "" {
-  const raw =
-    (localStorage.getItem("userRole") ?? localStorage.getItem("role") ?? "")
-      .toString()
-      .toLowerCase()
-      .trim();
+  const raw = (
+    localStorage.getItem("userRole") ??
+    localStorage.getItem("role") ??
+    ""
+  )
+    .toString()
+    .toLowerCase()
+    .trim();
   if (raw === "1" || raw === "admin") return "admin";
   if (raw === "2" || raw === "driver") return "driver";
   return "";
 }
+
+const toYMD = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
 
 type DriverOption = { id: number | string; label: string };
 
@@ -29,19 +37,21 @@ const FileUploadForm: React.FC = () => {
   const [selectedDriverId, setSelectedDriverId] = useState<string>("");
   const [rightName, setRightName] = useState(isAdmin ? "Admin" : "Driver");
 
+  const [date, setDate] = useState<string>(toYMD(new Date()));
+
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<DropState>("idle");
   const [status, setStatus] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-useEffect(() => {
-  const prev = document.body.style.overflow;
-  document.body.style.overflow = showModal ? "hidden" : prev || "";
-  return () => {
-    document.body.style.overflow = prev;
-  };
-}, [showModal]);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = showModal ? "hidden" : prev || "";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showModal]);
 
   useEffect(() => {
     (async () => {
@@ -72,7 +82,6 @@ useEffect(() => {
         }
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, token]);
 
   const chooseFile = () => inputRef.current?.click();
@@ -84,7 +93,9 @@ useEffect(() => {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ];
     const ext = f.name.split(".").pop()?.toLowerCase();
-    return validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "");
+    return (
+      validTypes.includes(f.type) || ["csv", "xlsx", "xls"].includes(ext || "")
+    );
   };
 
   const onFileChange = (f: File | null) => {
@@ -122,9 +133,15 @@ useEffect(() => {
       return;
     }
 
+    if (!date) {
+      setStatus("❌ Please select a date.");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("driverId", effectiveDriverId);
+    formData.append("date", date);
 
     setStatus("Uploading file, please wait a moment.");
     setState("loading");
@@ -141,7 +158,8 @@ useEffect(() => {
           const j = await res.json();
           if (j?.message)
             msg =
-              "❌ " + (Array.isArray(j.message) ? j.message.join(", ") : j.message);
+              "❌ " +
+              (Array.isArray(j.message) ? j.message.join(", ") : j.message);
         } catch {}
         setStatus(msg);
         setState("idle");
@@ -165,7 +183,7 @@ useEffect(() => {
       variant={isAdmin ? "admin" : "driver"}
       rightNameOverride={rightName}
     >
-      {/* Admin-only driver selector, centered and same width as upload card */}
+      {/* Admin-only driver selector with date directly below it */}
       {isAdmin && (
         <div className="upload-narrow card p-3 mb-3">
           <label className="form-label">Select Driver</label>
@@ -184,10 +202,32 @@ useEffect(() => {
               ))
             )}
           </select>
+
+          {/* Date (below driver field) */}
+          <label className="form-label mt-2">Select Date</label>
+          <input
+            type="date"
+            className="form-control"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
         </div>
       )}
 
-      {/* Upload card (unchanged) */}
+      {/* Driver view: show only the date selector above upload to keep layout consistent */}
+      {!isAdmin && (
+        <div className="upload-narrow card p-3 mb-3">
+          <label className="form-label">Select Date</label>
+          <input
+            type="date"
+            className="form-control"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+      )}
+
+      {/* Upload card (unchanged visually) */}
       <div className="upload-wrapper">
         <div
           className={`drop-area ${state === "dragover" ? "is-drag" : ""}`}
@@ -243,7 +283,10 @@ useEffect(() => {
           type="button"
           onClick={onUpload}
           disabled={
-            state === "loading" || !file || (isAdmin && !selectedDriverId)
+            state === "loading" ||
+            !file ||
+            (isAdmin && !selectedDriverId) ||
+            !date
           }
         >
           {state === "loading" ? "Uploading…" : "Upload"}

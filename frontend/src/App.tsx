@@ -7,6 +7,7 @@ import DriversPage from "./pages/Drivers";
 import FileUploadForm from "./components/FileUploadForm";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
+import DeleteDataPage from "./pages/DeleteDataPage";
 
 function getRoleName(): "admin" | "driver" | "" {
   const raw = (
@@ -74,6 +75,14 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute allow={["admin", "driver"]}>
               <FileUploadForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/delete-data"
+          element={
+            <ProtectedRoute allow={["admin"]}>
+              <DeleteDataPage />
             </ProtectedRoute>
           }
         />
