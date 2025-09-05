@@ -5,9 +5,15 @@ import illoLeft from "../assets/pics/left-login-img.png";
 import illoRight from "../assets/pics/right-login-img.png";
 import { port } from "../port.interface";
 
+type LoginResult = {
+  token: string | null;
+  roleFromApi: number | null;
+  user: any | null;
+};
+
 async function loginUser(
   credentials: Record<string, any>
-): Promise<{ token: string | null; roleFromApi: number | null }> {
+): Promise<LoginResult> {
   try {
     const baseUrl = port;
     const res = await fetch(`${baseUrl}/auth/login`, {
@@ -16,14 +22,16 @@ async function loginUser(
       body: JSON.stringify(credentials),
     });
 
-    if (!res.ok) return { token: null, roleFromApi: null };
+    if (!res.ok) return { token: null, roleFromApi: null, user: null };
+
     const data = await res.json();
     return {
       token: data?.accessToken ?? null,
       roleFromApi: data?.user?.role ?? null,
+      user: data?.user ?? null,
     };
   } catch {
-    return { token: null, roleFromApi: null };
+    return { token: null, roleFromApi: null, user: null };
   }
 }
 
@@ -71,15 +79,14 @@ const Login: React.FC = () => {
     setSubmitting(true);
 
     const userRole = role === "admin" ? 1 : 2;
-    let payload: Record<string, any> = { password, userRole };
-
+    const payload: Record<string, any> = { password, userRole };
     if (role === "admin") {
       payload.adminId = Number(adminId);
     } else {
       payload.driverId = Number(driverId);
     }
 
-    const { token, roleFromApi } = await loginUser(payload);
+    const { token, roleFromApi, user } = await loginUser(payload);
     setSubmitting(false);
 
     if (!token) {
@@ -89,11 +96,29 @@ const Login: React.FC = () => {
 
     localStorage.setItem("token", token);
     localStorage.setItem("role", role);
-    if (role === "driver") {
-      localStorage.setItem("driverId", driverId);
-    }
     if (roleFromApi !== null) {
       localStorage.setItem("roleNum", String(roleFromApi));
+      localStorage.setItem("userRole", String(roleFromApi));
+    }
+
+    if (role === "driver") {
+      const driverIdFromApi =
+        user?.driverId ?? user?.id ?? user?.userId ?? driverId;
+      if (driverIdFromApi != null && driverIdFromApi !== "") {
+        localStorage.setItem("driverId", String(driverIdFromApi));
+      } else {
+        localStorage.setItem("driverId", driverId);
+      }
+
+      const driverName =
+        user?.fullName || user?.name || user?.firstName || "Driver";
+      localStorage.setItem("fullName", driverName);
+      localStorage.setItem("driverName", driverName);
+    } else {
+      const adminFirst =
+        user?.firstName || user?.firstname || user?.name || "Admin";
+      localStorage.setItem("firstName", adminFirst);
+      localStorage.setItem("firstname", adminFirst);
     }
 
     navigate(role === "admin" ? "/dashboard" : "/upload");
