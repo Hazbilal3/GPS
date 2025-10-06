@@ -57,7 +57,7 @@ const DriversDirectory: React.FC = () => {
   );
 
   return (
-    <AdminLayout title="Drivers Directory">
+    <AdminLayout title="Drivers From Airtable">
       <div className="drivers-container">
         {/* Sidebar */}
         <div className="drivers-sidebar">

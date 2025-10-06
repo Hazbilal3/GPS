@@ -81,7 +81,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
       { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
       { to: "/routes", label: "Routes", icon: <LuMapPin /> }, 
-            { to: "/drivers-directory", label: "DD", icon: <LuCar /> }, 
+            { to: "/drivers-directory", label: "Drivers", icon: <LuCar /> }, 
   ];
 
   const driverMenu: MenuItem[] = [

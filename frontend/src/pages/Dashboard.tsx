@@ -527,6 +527,8 @@ const Dashboard: React.FC = () => {
             <thead>
               <tr>
                 <th>Barcode</th>
+                <th>Seq No</th>
+                <th>Last Event</th>
                 <th>Address</th>
                 <th>GPS Location</th>
                 <th>Expected Location</th>
@@ -535,62 +537,53 @@ const Dashboard: React.FC = () => {
                 <th className="text-end">Google Maps Link</th>
               </tr>
             </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-muted">
-                    Loading…
-                  </td>
-                </tr>
-              ) : (needAllRows ? filteredRows : rows).length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-muted">
-                    No data
-                  </td>
-                </tr>
-              ) : (
-                (needAllRows ? pagedRows : rows).map((r, i) => {
-                  const isMatch = String(r.status || "")
-                    .toLowerCase()
-                    .startsWith("match");
-                  const rowKey = String(r.barcode ?? `row-${i}`);
 
-                  return (
-                    <tr
-                      key={`${r.barcode}-${i}`}
-                      ref={(el) => {
-                        rowRefs.current[rowKey] = el;
-                      }}
-                    >
-                      <td>{r.barcode ?? ""}</td>
-                      <td className="text-wrap" style={{ maxWidth: 280 }}>
-                        {r.address ?? ""}
-                      </td>
-                      <td>{r.lastGpsLocation ?? ""}</td>
-                      <td>{r.expectedLocation ?? ""}</td>
-                      <td>{r.distanceKm ?? ""}</td>
-                      <td>
-                        <span
-                          className={`status-badge ${
-                            isMatch ? "status-match" : "status-mismatch"
-                          }`}
-                        >
-                          {isMatch ? "Match" : "Mismatch"}
-                        </span>
-                      </td>
-                      <td className="text-end">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary"
-                          onClick={() => openMapOverlay(r, rowKey)}
-                        >
-                          View Map
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+            <tbody>
+              {(needAllRows ? pagedRows : rows).map((r, i) => {
+                const isMatch = String(r.status || "")
+                  .toLowerCase()
+                  .startsWith("match");
+                const rowKey = String(r.barcode ?? `row-${i}`);
+
+                return (
+                  <tr
+                    key={`${r.barcode}-${i}`}
+                    ref={(el) => {
+                      rowRefs.current[rowKey] = el;
+                    }}
+                  >
+                    <td>{r.barcode ?? ""}</td>
+                    <td>{r.sequenceNo ?? "-"}</td>
+                    <td>{r.lastevent ?? "-"}</td>
+                    <td className="text-wrap" style={{ maxWidth: 280 }}>
+                      {r.address ?? ""}
+                    </td>
+                    <td>{r.lastGpsLocation ?? ""}</td>
+                    <td>{r.expectedLocation ?? ""}</td>
+                    <td>
+                      {r.distanceKm ? Number(r.distanceKm).toFixed(2) : "-"}
+                    </td>
+                    <td>
+                      <span
+                        className={`status-badge ${
+                          isMatch ? "status-match" : "status-mismatch"
+                        }`}
+                      >
+                        {isMatch ? "Match" : "Mismatch"}
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => openMapOverlay(r, rowKey)}
+                      >
+                        View Map
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

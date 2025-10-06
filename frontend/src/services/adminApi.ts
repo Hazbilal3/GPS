@@ -1,8 +1,10 @@
 import { port } from "../port.interface";
-import axios from "axios"
+import axios from "axios";
 
 export type DriverReportRow = {
   barcode?: string;
+  sequenceNo?: string | number; // ✅ new
+  lastevent?: string; // ✅ new
   address?: string;
   lastGpsLocation?: string;
   expectedLocation?: string;
@@ -52,6 +54,8 @@ export async function getDriverReport(opts: {
 
   const rows: DriverReportRow[] = raw.map((r: any) => ({
     barcode: r.barcode ?? "",
+    sequenceNo: r.sequenceNo ?? "",
+    lastevent: r.lastevent ?? "",
     address: r.address ?? "",
     lastGpsLocation: r.gpsLocation ?? "",
     expectedLocation:
