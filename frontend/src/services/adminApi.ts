@@ -1,4 +1,5 @@
 import { port } from "../port.interface";
+import axios from "axios"
 
 export type DriverReportRow = {
   barcode?: string;
@@ -189,4 +190,17 @@ export async function deleteDriverByDriverId(
     throw new Error(msg);
   }
   return true;
+}
+
+export async function listRoutes(token: string) {
+  try {
+    const res = await axios.get(`${BASE_URL}/airtable/routes`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return res.data; // should return array of routes
+  } catch (err: any) {
+    throw new Error(err.response?.data?.message || "Failed to fetch routes");
+  }
 }

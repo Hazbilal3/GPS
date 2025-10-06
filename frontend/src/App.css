@@ -202,3 +202,29 @@ p.text-center a:hover {
   background: linear-gradient(90deg, #b91c1c);
   filter: brightness(1.05);
 }
+/* ----------- */
+
+.badge-soft {
+  display: inline-block;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 20px;
+}
+
+.badge-soft-blue {
+  background-color: #e6f0ff; 
+  color: #1d4ed8;           
+}
+
+
+.badge-soft-green {
+  background-color: #d1fae5; 
+  color: #065f46;          
+}
+
+.badge-soft-red {
+  background-color: #fee2e2; 
+  color: #991b1b;          
+}
+
