@@ -8,7 +8,8 @@ import {
   LuLogOut,
   LuMenu,
   LuTrash2,
-  LuMapPin
+  LuMapPin,
+  LuCar
 } from "react-icons/lu";
 import "../assets/components-css/Dashboard.css";
 import cmjl from "../assets/pics/dashboard-logo.png";
@@ -80,6 +81,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
       { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
       { to: "/routes", label: "Routes", icon: <LuMapPin /> }, 
+            { to: "/drivers-directory", label: "DD", icon: <LuCar /> }, 
   ];
 
   const driverMenu: MenuItem[] = [

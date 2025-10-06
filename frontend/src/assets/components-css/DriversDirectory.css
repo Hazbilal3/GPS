@@ -1,0 +1,393 @@
+.detail-section h5 {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #111827;
+  margin-bottom: 14px;
+}
+
+/* === TEXT + LABELS === */
+.detail-section p {
+  font-size: 0.95rem;
+  color: #1f2937;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.detail-section strong {
+  color: #111827;
+  min-width: 140px;
+}
+
+/* === VALUE PLACEHOLDERS === */
+.detail-section p span,
+.detail-section p a {
+  display: inline-block;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  color: #111827;
+  min-width: 140px;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.detail-section p a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.detail-section p a:hover {
+  text-decoration: underline;
+}
+/* --------- */
+.driver-detail-panel {
+  background-color: #f9fafb;
+  height: 100%;
+  padding: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.driver-name2 {
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #111;
+}
+
+.status-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-pill.active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.detail-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+/* Cards */
+.detail-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #1f2937;
+  margin-bottom: 15px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+.info-item label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+.info-box.email a {
+  display: inline-block;
+  word-break: break-all;      /* breaks long words like emails */
+  overflow-wrap: anywhere;    /* ensures wrapping even in long strings */
+  color: #2563eb;             /* blue color (optional, matches link) */
+  text-decoration: none;
+}
+
+.info-box.email a:hover {
+  text-decoration: underline;
+}
+
+.info-box {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  color: #111827;
+  font-weight: 500;
+}
+
+.info-box.email a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.info-box.email a:hover {
+  text-decoration: underline;
+}
+
+/* Schedule */
+.schedule-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.day-pill {
+  /* background: #ffffff; */
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 8px 14px;
+  font-weight: 500;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+.availability {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.availability-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.availability-pill.available {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.availability-pill.unavailable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+
+
+/* Payroll Table */
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+  font-size: 0.9rem;
+}
+.payroll-table-wrapper {
+  margin-top: 15px;
+}
+
+.payroll-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payroll-table th {
+  text-align: left;
+  font-size: 0.85rem;
+  color: #6b7280;
+  padding: 8px;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.payroll-table td {
+  padding: 10px 8px;
+  font-size: 0.95rem;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.payroll-table tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.no-data {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+.driver-detail-container {
+  background: #f9fafb;
+  padding: 20px 28px;
+  border-radius: 12px;
+  overflow-y: auto;
+  max-height: 90vh;
+  font-family: "Inter", sans-serif;
+  color: #111827;
+}
+/* 
+.driver-detail-container,
+.driver-detail-container p,
+.driver-detail-container strong,
+.driver-detail-container h3,
+.driver-detail-container h5 {
+  color: #111 !important; 
+} */
+
+.drivers-container {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 150px);
+  
+}
+
+/* --- Sidebar --- */
+.drivers-sidebar {
+  width: 300px;
+  background: #fff;
+  border-radius: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+}
+
+.search-input {
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.drivers-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.driver-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.driver-item:hover {
+  background: #f9fafb;
+}
+
+.driver-item.active {
+  background: #e7f1ff;
+  border-left: 3px solid #0d6efd;
+}
+
+.driver-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  /* background: #dee2e6; */
+}
+
+.driver-info {
+  flex-grow: 1;
+}
+
+.driver-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111;
+}
+
+.badge-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge-pill {
+  display: inline-block;
+  border-radius: 50px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.badge-green {
+  background-color: #dcfce7;
+  color: #065f46;
+}
+
+.badge-red {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-blue {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* --- Details --- */
+.drivers-details {
+  flex-grow: 1;
+  background: #fff;
+  border-radius: 10px;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.driver-detail-container h5 {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.driver-name-header {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.detail-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 18px;
+}
+
+.schedule-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+
+.day-pill:nth-child(1) { background-color: #dbeafe; } /* Monday */
+.day-pill:nth-child(2) { background-color: #e0f2fe; } /* Tuesday */
+.day-pill:nth-child(3) { background-color: #dcfce7; } /* Wednesday */
+.day-pill:nth-child(4) { background-color: #f0fdf4; } /* Thursday */
+.day-pill:nth-child(7) { background-color: #fae8ff; } /* Sunday */
+.day-pill:nth-child(5) { background-color: #fef9c3; } /* Friday */
+.day-pill:nth-child(6) { background-color: #fee2e2; } /* Saturday */

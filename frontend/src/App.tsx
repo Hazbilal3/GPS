@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import DeleteDataPage from "./pages/DeleteDataPage";
 import RoutePaths from "./pages/RoutePaths";
+import DriversDirectory from "./pages/DriversDirectory";
 
 function getRoleName(): "admin" | "driver" | "" {
   const raw = (
@@ -51,7 +52,7 @@ const App: React.FC = () => {
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
+    
         {/* Admin-only */}
         <Route
           path="/dashboard"
@@ -95,7 +96,14 @@ const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
-
+                  <Route
+          path="/drivers-directory"
+          element={
+            <ProtectedRoute allow={["admin"]}>
+              <DriversDirectory />
+            </ProtectedRoute>
+          }
+        />
         {/* Fallback: driver -> /upload, admin -> /dashboard */}
         <Route
           path="*"
