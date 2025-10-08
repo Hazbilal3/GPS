@@ -1,7 +1,8 @@
-// src/services/airtableApi.ts
+import { port } from "../port.interface"; 
+
 export async function listAirtableDrivers(): Promise<any[]> {
   try {
-    const res = await fetch("http://localhost:3010/airtable/drivers");
+    const res = await fetch(`${port}/airtable/drivers`);
     if (!res.ok) {
       throw new Error(`Failed to fetch drivers: ${res.status}`);
     }
