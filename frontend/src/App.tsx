@@ -10,6 +10,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import DeleteDataPage from "./pages/DeleteDataPage";
 import RoutePaths from "./pages/RoutePaths";
 import DriversDirectory from "./pages/DriversDirectory";
+import PayrollPage from "./pages/PayrollPage";
 
 function getRoleName(): "admin" | "driver" | "" {
   const raw = (
@@ -101,6 +102,14 @@ const App: React.FC = () => {
           element={
             <ProtectedRoute allow={["admin"]}>
               <DriversDirectory />
+            </ProtectedRoute>
+          }
+        />
+                          <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute allow={["admin"]}>
+              <PayrollPage />
             </ProtectedRoute>
           }
         />
