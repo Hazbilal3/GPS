@@ -69,8 +69,9 @@ const Dashboard: React.FC = () => {
 
   const [driverId, setDriverId] = useState("");
   const [date, setDate] = useState(toYMD(new Date()));
+  
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "match" | "mismatch"
+    "all" | "match" | "mismatch" | "delivered" | "attempted"
   >("all");
   const [globalQuery, setGlobalQuery] = useState("");
 
@@ -205,28 +206,42 @@ const Dashboard: React.FC = () => {
   }, [fetchReport]);
 
   const filteredRows: DriverReportRow[] = useMemo(() => {
-    const base = needAllRows ? allRows || [] : rows;
+    let base = needAllRows ? allRows || [] : rows;
 
-    const byStatus =
-      statusFilter === "all"
-        ? base
-        : base.filter((r) => {
-            const v = String(r.status || "").toLowerCase();
-            const isMatch = v === "match" || v === "matched";
-            return statusFilter === "match" ? isMatch : !isMatch;
-          });
+    if (statusFilter !== "all") {
+      base = base.filter((r) => {
+        const scanStatus = String(r.status || "").toLowerCase();
+        const isMatch = scanStatus === "match" || scanStatus === "matched";
+        const lastEvent = String(r.lastevent || "").toLowerCase();
+
+        switch (statusFilter) {
+          case "match":
+            return isMatch;
+          case "mismatch":
+            return !isMatch;
+          case "delivered":
+            return lastEvent === "delivered";
+          case "attempted":
+            return lastEvent === "attempted";
+          default:
+            return true;
+        }
+      });
+    }
 
     const q = globalQuery.trim().toLowerCase();
-    if (!q) return byStatus;
+    if (!q) return base;
 
     const contains = (val?: any) =>
       String(val ?? "")
         .toLowerCase()
         .includes(q);
 
-    return byStatus.filter(
+    return base.filter(
       (r) =>
         contains(r.barcode) ||
+        contains(r.sequenceNo) ||      
+        contains(r.lastevent) ||        
         contains(r.address) ||
         contains(r.lastGpsLocation) ||
         contains(r.expectedLocation) ||
@@ -351,14 +366,11 @@ const Dashboard: React.FC = () => {
     setGlobalQuery("");
     setStatusFilter("all");
     setPage(1);
-
     setDriverId("");
     setRows([]);
     setAllRows(null);
     setTotal(0);
-
-    setQueried(true);
-
+    setQueried(false); 
     setError(null);
     setShowMap(false);
     setShowProof(false);
@@ -489,6 +501,34 @@ const Dashboard: React.FC = () => {
                 >
                   Mismatch
                 </button>
+                
+                {/* CHANGE 3: Added new filter buttons for Delivered and Attempted */}
+                <button
+                  className={`dropdown-item ${
+                    statusFilter === "delivered" ? "active" : ""
+                  }`}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("delivered");
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  Delivered
+                </button>
+                <button
+                  className={`dropdown-item ${
+                    statusFilter === "attempted" ? "active" : ""
+                  }`}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("attempted");
+                    setPage(1);
+                    setQueried(true);
+                  }}
+                >
+                  Attempted
+                </button>
 
                 <div className="d-grid mt-2">
                   <button
@@ -556,6 +596,7 @@ const Dashboard: React.FC = () => {
                   const isMatch = String(r.status || "")
                     .toLowerCase()
                     .startsWith("match");
+                  const lastEventStatus = String(r.lastevent || "").toLowerCase();
                   const rowKey = String(r.barcode ?? `row-${i}`);
 
                   return (
@@ -567,7 +608,26 @@ const Dashboard: React.FC = () => {
                     >
                       <td>{r.barcode ?? ""}</td>
                       <td>{r.sequenceNo ?? "-"}</td>
-                      <td>{r.lastevent ?? "-"}</td>
+                      
+                      {/* CHANGE 5: Added conditional rendering for pill colors in Last Event column */}
+                      <td>
+                        {r.lastevent ? (
+                          <span
+                            className={`status-badge ${
+                              lastEventStatus === "delivered"
+                                ? "status-delivered"
+                                : lastEventStatus === "attempted"
+                                ? "status-attempted"
+                                : ""
+                            }`}
+                          >
+                            {r.lastevent}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                      
                       <td className="text-wrap" style={{ maxWidth: 280 }}>
                         {r.address ?? ""}
                       </td>

@@ -1,7 +1,24 @@
+/* Replace the existing .week-summary-row styles with this block */
+
+.week-summary-row {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Apply background to all cells in the summary row */
+.week-summary-row td {
+  background-color: #f0f9ff !important;
+  color: #000;
+}
+
+/* Apply specific text color to the first cell */
+.week-summary-row td:first-child {
+  color: #3b82f6;
+}
 .card {
   border: 1px solid #e9eef5;
   border-radius: 8px;
-  padding: 20px;
+  padding: 10px;
 }
 
 .custom-table {

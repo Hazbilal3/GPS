@@ -274,6 +274,17 @@ body,
   color: #991b1b;
 }
 
+.status-delivered {
+  background-color: #cff4fc; 
+  color: #055160;
+}
+
+.status-attempted {
+  background-color: #fff3cd; 
+  color: #664d03;
+}
+
+
 .table-footer {
   background: #fff;
   color: #0b1a2a;
@@ -328,8 +339,8 @@ body,
   pointer-events: all;
 }
 .profile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   background: #f0f0f0;
   display: flex;

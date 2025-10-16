@@ -10,7 +10,7 @@ import {
   LuTrash2,
   LuMapPin,
   LuCar,
-  LuWallet
+  LuBanknote
 } from "react-icons/lu";
 import "../assets/components-css/Dashboard.css";
 import cmjl from "../assets/pics/dashboard-logo.png";
@@ -83,7 +83,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
       { to: "/routes", label: "Routes", icon: <LuMapPin /> }, 
             { to: "/drivers-directory", label: "Drivers", icon: <LuCar /> },
-            { to: "/payroll", label: "Payroll", icon: <LuWallet /> } 
+            { to: "/payroll", label: "Payroll", icon: <LuBanknote /> } 
   ];
 
   const driverMenu: MenuItem[] = [
@@ -186,7 +186,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           </button>
 
           <div className="topbar-left">
-            <h1>Welcome to CMJL</h1>
+            <h1>Welcome to CMJL <img src={cmjl} className="brand-img mx-2" style={{width:"35px", height:"35px"}}/></h1>
           </div>
           <div className="topbar-right">
             <div className="profile-avatar">

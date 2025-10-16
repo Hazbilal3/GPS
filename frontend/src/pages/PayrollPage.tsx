@@ -21,6 +21,8 @@ type Driver = {
 type PayrollData = {
   weekNumber: number;
   payPeriod: string;
+  totalStops: number;
+  subtotal: number;
   drivers: Driver[];
 };
 
@@ -39,9 +41,7 @@ const PayrollPage: React.FC = () => {
           throw new Error("Failed to fetch payroll data");
         }
         const data: PayrollData[] = await res.json();
-
         const sortedData = data.sort((a, b) => b.weekNumber - a.weekNumber);
-
         setPayrollData(sortedData);
       } catch (err: any) {
         setError(err?.message || "Failed to load payroll data");
@@ -83,37 +83,40 @@ const PayrollPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {payrollData.map((weekData) => (
-                <React.Fragment key={weekData.weekNumber}>
-                  <tr>
-                    <td
-                      colSpan={6}
-                      style={{
-                        textAlign: "left",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+              {payrollData.map((weekData) => {
+                const isExpanded = expandedWeek === String(weekData.weekNumber);
+                return (
+                  <React.Fragment key={weekData.weekNumber}>
+                    <tr
+                      className="week-summary-row"
                       onClick={() => toggleWeek(String(weekData.weekNumber))}
                     >
-                      {expandedWeek === String(weekData.weekNumber) ? (
-                        <LuChevronDown />
-                      ) : (
-                        <LuChevronRight />
-                      )}
-                      Week {weekData.weekNumber}
-                    </td>
-                  </tr>
-                  {expandedWeek === String(weekData.weekNumber) && (
-                    <>
-                      {weekData.drivers.map((driver, idx) => (
+                      {/* Column 1: Week Number and Toggle Icon */}
+                      <td>
+                        {isExpanded ? <LuChevronDown /> : <LuChevronRight />}
+                        Week {weekData.weekNumber}
+                      </td>
+                      {/* Column 2: Pay Period (now empty) */}
+                      <td></td>
+                      {/* Column 3: Driver (empty placeholder) */}
+                      <td></td>
+                      {/* Column 4: Total Stops (always visible) */}
+                      <td><span style={{color: "#aaa", fontWeight:"200"}}>sum: </span>{weekData.totalStops}</td>
+                      {/* Column 5: Subtotal (always visible) */}
+                      <td><span style={{color: "#aaa",fontWeight:"200"}}>sum: </span>${weekData.subtotal.toFixed(2)}</td>
+                      {/* Column 6: Show Details (empty placeholder) */}
+                      <td></td>
+                    </tr>
+
+                    {/* Driver rows are rendered only when expanded */}
+                    {isExpanded &&
+                      weekData.drivers.map((driver, idx) => (
                         <tr key={idx}>
                           <td>{weekData.weekNumber}</td>
                           <td>{weekData.payPeriod}</td>
                           <td>{driver.driverName}</td>
                           <td>{driver.totalStops}</td>
-                          <td>${driver.subtotal}</td>
+                          <td>${driver.subtotal.toFixed(2)}</td>
                           <td>
                             <button
                               className="btn btn-outline-pay-primary"
@@ -124,10 +127,9 @@ const PayrollPage: React.FC = () => {
                           </td>
                         </tr>
                       ))}
-                    </>
-                  )}
-                </React.Fragment>
-              ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -135,38 +137,17 @@ const PayrollPage: React.FC = () => {
 
       {/* Modal for Driver Details */}
       {selectedDriver && (
-        <div
-          className="modal-overlay-pay"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            className="modal-content-pay"
-            style={{
-              backgroundColor: "white",
-              padding: "20px",
-              borderRadius: "8px",
-              width: "70%",
-              maxWidth: "600px",
-              boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-            }}
-          >
+        <div className="modal-overlay-pay">
+          <div className="modal-content-pay">
             <button
               onClick={closeModal}
               className="btn btn-light"
-              style={{ position: "absolute", top: "10px", right: "10px" }}
             >
               <LuX />
             </button>
 
-            <h6 className="mb-3" style={{ color: "black" }}>
-              <span className="de" style={{ color: "#aaa" }}>
+            <h6 className="mb-3" style={{ color: "#3b82f6" }}>
+              <span className="de" style={{ color: "#000" }}>
                 Driver:{" "}
               </span>{" "}
               {selectedDriver.driverName}
@@ -185,8 +166,8 @@ const PayrollPage: React.FC = () => {
                   <tr key={idx}>
                     <td>{zip.zip}</td>
                     <td>{zip.stops}</td>
-                    <td>${zip.rate}</td>
-                    <td>${zip.amount}</td>
+                    <td>${zip.rate.toFixed(2)}</td>
+                    <td>${zip.amount.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
