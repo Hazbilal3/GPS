@@ -186,7 +186,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
           </button>
 
           <div className="topbar-left">
-            <h1>Welcome to CMJL <img src={cmjl} className="brand-img mx-2" style={{width:"35px", height:"35px"}}/></h1>
+            <h1>Welcome to CMJL</h1>
           </div>
           <div className="topbar-right">
             <div className="profile-avatar">

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import "../App.css";
 import axios from "axios";
-import { port } from "../port.interface"; 
+import { port } from "../port.interface";
 
 export interface Route {
   id?: number;
@@ -78,7 +78,14 @@ const RoutesPage: React.FC = () => {
                     <td>{idx + 1}</td>
                     <td>{r.routeNumber ?? "-"}</td>
                     <td>{r.description ?? "-"}</td>
-                    <td>{r.zipCode?.join(", ") ?? "-"}</td>
+                    <td>
+                      {r.zipCode
+                        ? r.zipCode
+                            .map((z) => `0${z.toString().replace(/^0+/, "")}`)
+                            .join(", ")
+                        : "-"}
+                    </td>
+
                     <td>{r.ratePerStop ? `$${r.ratePerStop}` : "-"}</td>
                     <td>
                       {r.ratePerStopCompanyVehicle

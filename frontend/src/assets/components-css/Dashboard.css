@@ -186,12 +186,12 @@ body,
   align-items: center;
   gap: 10px;
 }
-.profile-avatar {
+/* .profile-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: #2f455f;
-}
+} */
 .profile-name {
   color: #e7eef7;
   font-weight: 600;
@@ -339,8 +339,8 @@ body,
   pointer-events: all;
 }
 .profile-avatar {
-  width: 35px;
-  height: 35px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: #f0f0f0;
   display: flex;
