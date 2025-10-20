@@ -1,0 +1,106 @@
+.filter-dropdown-wrapper {
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.filter-dropdown-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #333;
+  background-color: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  min-width: 140px;
+  max-width: 250px; 
+  text-align: left;
+}
+
+.filter-dropdown-btn:hover {
+  background-color: #f8f9fa;
+}
+
+.filter-dropdown-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filter-chevron {
+  transition: transform 0.2s ease-in-out;
+  flex-shrink: 0; 
+}
+
+.filter-chevron.open {
+  transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  min-width: 280px;
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.375rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.filter-search-input {
+  box-sizing: border-box; 
+  width: calc(100% - 1.5rem);
+  margin: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.9rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+}
+
+.filter-dropdown-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.filter-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-dropdown-item:hover {
+  background-color: #f1f3f5;
+}
+
+.filter-checkbox {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  accent-color: #3b82f6; 
+}
+
+.filter-dropdown-item span {
+  font-size: 0.9rem;
+  color: #212529;
+}
+
+.filter-dropdown-item-none {
+  padding: 0.5rem 1.25rem;
+  color: #6c757d;
+  font-style: italic;
+  font-size: 0.9rem;
+}

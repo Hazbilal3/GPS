@@ -124,51 +124,8 @@ const DriverDetailPanel: React.FC<Props> = ({ driver }) => {
             </div>
           </div>
 
-          <div className="payroll-table-wrapper">
-            <table className="payroll-table">
-              <thead>
-                <tr>
-                  <th>Direct Deposit</th>
-                  <th>Pay Period</th>
-                  <th>Subtotal</th>
-                  <th>Total Bonus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {driver.Payroll && driver.Payroll.length > 0 ? (
-                  driver.Payroll.map((id, i) => (
-                    <tr key={i}>
-                      <td>{id}</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td>-</td>
-                    </tr>
-                  ))
-                ) : (
-                  <>
-                    <tr>
-                      <td>05/23/2025</td>
-                      <td>05/10 - 05/16</td>
-                      <td>$636.00</td>
-                      <td>$0.00</td>
-                    </tr>
-                    <tr>
-                      <td>06/06/2025</td>
-                      <td>05/24 - 05/30</td>
-                      <td>$1,336.00</td>
-                      <td>$0.00</td>
-                    </tr>
-                    <tr>
-                      <td>06/20/2025</td>
-                      <td>06/07 - 06/13</td>
-                      <td>$2,184.00</td>
-                      <td>$0.00</td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {/* Payroll table has been removed from here */}
+
         </section>
       </div>
     </div>
