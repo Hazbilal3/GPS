@@ -96,7 +96,7 @@ const DriverDetailPanel: React.FC<Props> = ({ driver }) => {
 
         {/* Payroll Section */}
         <section className="detail-card">
-          <h5 className="section-title">Payroll</h5>
+          <h5 className="section-title">Pay Rate</h5>
           <div className="info-grid">
             <div className="info-item">
               <label>Salary Type</label>

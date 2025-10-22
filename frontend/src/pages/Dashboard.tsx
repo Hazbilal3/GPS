@@ -172,45 +172,78 @@ const Dashboard: React.FC = () => {
     return combined;
   }, [fetchPage]);
 
-  const fetchReport = useCallback(async () => {
-    if (!queried || !driverId) return;
+  // --- FIX: Replaced fetchReport logic with two separate useEffect hooks ---
 
-    setLoading(true);
-    setError(null);
+  // Effect 1: Handles API-side pagination (when no filter is active)
+  useEffect(() => {
+    if (!queried || !driverId || needAllRows) {
+      // Do nothing if filters are active, the other effect will handle it.
+      return;
+    }
 
-    try {
-      if (needAllRows) {
-        const all = await fetchAll();
-        setAllRows(all);
-        setRows(all);
-        setTotal(all.length);
-        setPage(1);
-      } else {
+    const runFetchPage = async () => {
+      setLoading(true);
+      setError(null);
+      try {
         const { data, total: apiTotal } = await fetchPage(page, limit);
-        setAllRows(null);
+        setAllRows(null); // Clear allRows
         setRows(data);
         setTotal(apiTotal);
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch data.");
+        setRows([]);
+        setTotal(0);
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to fetch data.");
-      setRows([]);
-      setAllRows(null);
-      setTotal(0);
-    } finally {
-      setLoading(false);
-    }
-  }, [queried, driverId, page, limit, needAllRows, fetchAll, fetchPage]);
+    };
 
+    runFetchPage();
+  }, [queried, driverId, date, page, limit, needAllRows, fetchPage]);
+
+  // Effect 2: Handles fetching ALL data for client-side filtering
   useEffect(() => {
-    fetchReport();
-  }, [fetchReport]);
+    if (!queried || !driverId || !needAllRows) {
+      // Do nothing if filters are NOT active.
+      return;
+    }
+    
+    // This effect runs when data source changes (driver, date) or when
+    // filters are first applied (needAllRows becomes true).
+    // It does NOT depend on `page` or `limit`.
+
+    const runFetchAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const all = await fetchAll();
+        setAllRows(all);
+        setRows([]); // Clear `rows` as we are in `allRows` mode
+        // `effectiveTotal` will be set by `filteredRows.length`
+      } catch (err: any) {
+        setError(err?.message || "Failed to fetch data.");
+        setAllRows(null);
+        setTotal(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    runFetchAll();
+  }, [queried, driverId, date, needAllRows, fetchAll]); // `page` and `limit` are intentionally removed
+
+  // --- END FIX ---
+
 
   const filteredRows: DriverReportRow[] = useMemo(() => {
+    // When needAllRows is true, base is allRows.
+    // When needAllRows is false, base is rows (the current page).
     let base = needAllRows ? allRows || [] : rows;
 
     if (statusFilter !== "all") {
       base = base.filter((r) => {
         const scanStatus = String(r.status || "").toLowerCase();
+        // Handle "matched" as well as "match"
         const isMatch = scanStatus === "match" || scanStatus === "matched";
         const lastEvent = String(r.lastevent || "").toLowerCase();
 
@@ -218,6 +251,7 @@ const Dashboard: React.FC = () => {
           case "match":
             return isMatch;
           case "mismatch":
+            // Mismatch should also include other statuses like geocode_error etc.
             return !isMatch;
           case "delivered":
             return lastEvent === "delivered";
@@ -240,8 +274,8 @@ const Dashboard: React.FC = () => {
     return base.filter(
       (r) =>
         contains(r.barcode) ||
-        contains(r.sequenceNo) ||      
-        contains(r.lastevent) ||        
+        contains(r.sequenceNo) ||       
+        contains(r.lastevent) ||         
         contains(r.address) ||
         contains(r.lastGpsLocation) ||
         contains(r.expectedLocation) ||
@@ -251,17 +285,21 @@ const Dashboard: React.FC = () => {
     );
   }, [needAllRows, allRows, rows, statusFilter, globalQuery]);
 
+  // This logic is now correct.
+  // If needAllRows is true, total is client-side filtered length.
+  // If needAllRows is false, total is API-side total.
   const effectiveTotal = needAllRows ? filteredRows.length : total;
   const effectiveTotalPages = Math.max(1, Math.ceil(effectiveTotal / limit));
 
   useEffect(() => {
+    // This effect ensures if filters reduce total pages, we don't stay on an empty page
     if (page > effectiveTotalPages) setPage(effectiveTotalPages);
   }, [page, effectiveTotalPages]);
 
   const pagedRows: DriverReportRow[] = useMemo(() => {
-    if (!needAllRows) return filteredRows;
+    if (!needAllRows) return filteredRows; // Not filtering, so return the API-paginated rows
     const start = (page - 1) * limit;
-    return filteredRows.slice(start, start + limit);
+    return filteredRows.slice(start, start + limit); // We are filtering, so slice the filtered data
   }, [needAllRows, filteredRows, page, limit]);
 
   const pageNumbers = useMemo(() => {
@@ -288,7 +326,8 @@ const Dashboard: React.FC = () => {
       }
       setError(null);
       setQueried(true);
-      setPage(1);
+      setPage(1); // Reset page on new search
+      setAllRows(null); // Force refetch
     },
     [driverId]
   );
@@ -359,7 +398,7 @@ const Dashboard: React.FC = () => {
     setGlobalQuery("");
     setStatusFilter("all");
     setPage(1);
-    setQueried(true);
+    setQueried(true); // Re-run search with "all"
   };
 
   const clearSelection = () => {
@@ -387,9 +426,10 @@ const Dashboard: React.FC = () => {
               value={driverId}
               onChange={(e) => {
                 setDriverId(e.target.value);
-                setPage(1);
+                setPage(1); // Reset page when driver changes
                 setShowMap(false);
                 setShowProof(false);
+                setAllRows(null); // Force refetch
               }}
             >
               <option value="">Select Driver</option>
@@ -409,9 +449,10 @@ const Dashboard: React.FC = () => {
               value={date}
               onChange={(e) => {
                 setDate(e.target.value);
-                setPage(1);
+                setPage(1); // Reset page when date changes
                 setShowMap(false);
                 setShowProof(false);
+                setAllRows(null); // Force refetch
               }}
             />
           </div>
@@ -447,7 +488,7 @@ const Dashboard: React.FC = () => {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    setPage(1);
+                    setPage(1); // Reset page on search
                     setQueried(true);
                   }}
                 >
@@ -592,6 +633,9 @@ const Dashboard: React.FC = () => {
                   </td>
                 </tr>
               ) : (
+                // This logic is now correct:
+                // If needAllRows=true, render pagedRows (client-paginated)
+                // If needAllRows=false, render rows (api-paginated)
                 (needAllRows ? pagedRows : rows).map((r, i) => {
                   const isMatch = String(r.status || "")
                     .toLowerCase()
@@ -609,7 +653,6 @@ const Dashboard: React.FC = () => {
                       <td>{r.barcode ?? ""}</td>
                       <td>{r.sequenceNo ?? "-"}</td>
                       
-                      {/* CHANGE 5: Added conditional rendering for pill colors in Last Event column */}
                       <td>
                         {r.lastevent ? (
                           <span
