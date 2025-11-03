@@ -105,14 +105,14 @@ const App: React.FC = () => {
             </ProtectedRoute>
           }
         />
-                          <Route
-          path="/payroll"
-          element={
-            <ProtectedRoute allow={["admin"]}>
-              <PayrollPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/payroll"
+            element={
+              <ProtectedRoute allow={["admin", "driver"]}>
+                <PayrollPage />
+              </ProtectedRoute>
+            }
+          />
         {/* Fallback: driver -> /upload, admin -> /dashboard */}
         <Route
           path="*"

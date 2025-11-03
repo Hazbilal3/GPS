@@ -1,39 +1,49 @@
 import React, { useEffect, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
-import { listAirtableDrivers } from "../services/airtableApi";
+import {
+  listAirtableDrivers,
+  createDriver,
+  updateDriver,
+  deleteDriver,
+} from "../services/airtableApi";
 import DriverDetailPanel from "./DriverDetailPanel";
+import DriverFormPanel from "./DriverFormPanel";
 import "../assets/components-css/DriversDirectory.css";
-// import {
-//     LuUser,
-//     LuSearch
-// } from "react-icons/lu";
-import pp from "../assets/pics/pp.svg"
+import pp from "../assets/pics/pp.svg";
+import { ToastProvider, useToast } from "../components/ToastManager";
+import {
+LuPlus
+} from "react-icons/lu";
+
+
 
 export interface Driver {
-  id?: string | number;
+  id?: number;
   ["Full Name"]: string;
   ["First Name"]: string;
   ["Last Name"]: string;
   Company?: string;
   Status: string;
-  ["Payroll"]?: string[];
-  ["Stops"]?: string[];
   ["Phone Number"]?: string;
   Email?: string;
-  ["Last Trip Date"]?: string[];
-  ["OFID Number"]?: number;
+  ["OFID Number"]?: number | string;
   ["Salary Type"]?: string;
   Schedule?: string[];
   ["Day of the Week"]?: string;
   ["Driver Available Today?"]?: string;
+  ["Base Rate"]?: number;
+  ["Rate per Stop"]?: number;
+  ["Fixed Rate Per Stop"]?: number;
 }
 
-const DriversDirectory: React.FC = () => {
+const DriversDirectoryInner: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+  const { showToast } = useToast();
 
   async function loadDrivers() {
     try {
@@ -52,6 +62,38 @@ const DriversDirectory: React.FC = () => {
     loadDrivers();
   }, []);
 
+  const handleAddDriver = async (driverData: any) => {
+    try {
+      await createDriver(driverData);
+      await loadDrivers();
+      setIsAdding(false);
+      showToast("Driver added successfully", "success");
+    } catch (e: any) {
+      showToast("Failed to create driver", "error");
+    }
+  };
+
+  const handleUpdateDriver = async (id: number, driverData: Partial<Driver>) => {
+    try {
+      await updateDriver(id, driverData);
+      await loadDrivers();
+      showToast("Driver updated successfully", "success");
+    } catch (e: any) {
+      showToast("Failed to update driver", "error");
+    }
+  };
+
+  const handleDeleteDriver = async (id: number) => {
+    try {
+      await deleteDriver(id);
+      await loadDrivers();
+      setSelectedDriver(null);
+      showToast("Driver deleted successfully", "success");
+    } catch (e: any) {
+      showToast("Failed to delete driver", "error");
+    }
+  };
+
   const filteredDrivers = drivers.filter((d) =>
     d["Full Name"]?.toLowerCase().includes(search.toLowerCase())
   );
@@ -61,13 +103,21 @@ const DriversDirectory: React.FC = () => {
       <div className="drivers-container">
         {/* Sidebar */}
         <div className="drivers-sidebar">
-          <input
-            type="text"
-            className="form-control search-input mb-3"
-            placeholder=" Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <input
+              type="text"
+              className="form-control search-input"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <button
+              className="btn btn-primary ms-2"
+              onClick={() => setIsAdding(true)}
+            >
+              <LuPlus/>
+            </button>
+          </div>
 
           {loading ? (
             <p className="text-center mt-3">Loading...</p>
@@ -83,9 +133,14 @@ const DriversDirectory: React.FC = () => {
                       ? "active"
                       : ""
                   }`}
-                  onClick={() => setSelectedDriver(d)}
+                  onClick={() => {
+                    setSelectedDriver(d);
+                    setIsAdding(false);
+                  }}
                 >
-                  <div className="driver-avatar"><img className="driver-avatar" src={pp} alt="pp" /></div>
+                  <div className="driver-avatar">
+                    <img className="driver-avatar" src={pp} alt="pp" />
+                  </div>
                   <div className="driver-info">
                     <div className="driver-name">{d["Full Name"]}</div>
                     <div className="badge-row">
@@ -111,10 +166,20 @@ const DriversDirectory: React.FC = () => {
           )}
         </div>
 
-        {/* Right Details Panel */}
+        {/* Right Side Panel */}
         <div className="drivers-details">
-          {selectedDriver ? (
-            <DriverDetailPanel driver={selectedDriver} />
+          {isAdding ? (
+            <DriverFormPanel
+              onCancel={() => setIsAdding(false)}
+              onSubmit={handleAddDriver}
+            />
+          ) : selectedDriver ? (
+            <DriverDetailPanel
+              driver={selectedDriver}
+              reloadDrivers={loadDrivers}
+              onUpdate={handleUpdateDriver}
+              onDelete={handleDeleteDriver}
+            />
           ) : (
             <div className="card p-4 text-center">
               <p>Select a driver to view details</p>
@@ -126,4 +191,11 @@ const DriversDirectory: React.FC = () => {
   );
 };
 
-export default DriversDirectory;
+// Wrap your page with ToastProvider
+const DriversDirectory = () => (
+  <ToastProvider>
+    <DriversDirectoryInner />
+  </ToastProvider>
+);
+
+export default DriversDirectory

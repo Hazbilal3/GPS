@@ -390,3 +390,154 @@
 .day-pill:nth-child(7) { background-color: #fae8ff; } /* Sunday */
 .day-pill:nth-child(5) { background-color: #fef9c3; } /* Friday */
 .day-pill:nth-child(6) { background-color: #fee2e2; } /* Saturday */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.driver-modal-container {
+  background: #fff;
+  padding: 24px 28px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  color: #111;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+/* ------- */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast-message {
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #fff;
+  animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  min-width: 220px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.toast-success {
+  background-color: #16a34a; /* green */
+}
+.toast-error {
+  background-color: #dc2626; /* red */
+}
+.toast-info {
+  background-color: #2563eb; /* blue */
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+/* ------- */
+/* === FIX EMAIL FLEX + WRAP === */
+.info-box.email {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.info-box.email a {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  font-weight: 500;
+}
+
+.info-box.email a:hover {
+  text-decoration: underline;
+}
+
+/* === INPUT + SELECT IN EDIT MODE === */
+.form-control,
+.form-select {
+  background-color: #f8f9fa !important; /* light grey */
+  border: 1px solid #dee2e6 !important;
+  color: #111 !important;
+  transition: background 0.2s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: #fff !important;
+  border-color: #0d6efd !important;
+  box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.15);
+}
+
+/* === WEEKLY SCHEDULE HEADING FIX === */
+.detail-card label.mt-3 {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+/* === DAY PILLS INTERACTION === */
+.day-pill {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 500;
+  cursor: default;
+  background-color: #f9fafb;
+  transition: all 0.2s ease;
+}
+
+.day-pill.bg-primary {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+  border-color: #0d6efd !important;
+}
+
+.day-pill:hover {
+  transform: scale(1.03);
+  background-color: #e9f2ff;
+}
+
+.day-pill.text-white:hover {
+  transform: scale(1.03);
+  background-color: #0b5ed7 !important;
+}
+
+/* === SCHEDULE HEADING VISIBILITY FIX === */
+.schedule-wrapper + label,
+label.mt-3 {
+  font-weight: 600;
+  color: #111827;
+  opacity: 1 !important;
+}

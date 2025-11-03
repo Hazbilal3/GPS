@@ -88,6 +88,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   const driverMenu: MenuItem[] = [
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
+        { to: "/payroll", label: "Payroll", icon: <LuBanknote /> },
   ];
 
   const menuItems = useMemo(
