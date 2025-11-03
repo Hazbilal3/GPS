@@ -244,7 +244,7 @@ const DriversPage: React.FC = () => {
   };
 
   return (
-    <AdminLayout title="Drivers">
+    <AdminLayout title="App Registered Drivers">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div />
         <button
