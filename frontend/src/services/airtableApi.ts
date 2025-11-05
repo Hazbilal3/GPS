@@ -11,7 +11,7 @@ export async function listAirtableDrivers(): Promise<Driver[]> {
     return Array.isArray(data)
       ? data.map((d) => ({
           id: d.id,
-          ["Full Name"]: d.fullName,
+          ["Full Name"]: d["Full Name"] || d.fullName || `${d.firstName ?? ""} ${d.lastName ?? ""}`.trim(),
           ["First Name"]: d.firstName,
           ["Last Name"]: d.lastName,
           Status: d.Status,
@@ -60,4 +60,14 @@ export async function deleteDriver(id: number) {
   });
   if (!res.ok) throw new Error("Failed to delete driver");
   return res.json();
+}
+// ✅ Add this helper function:
+export async function listAirtableDriverNames() {
+  try {
+    const drivers = await listAirtableDrivers();
+    return drivers.map((d: any) => d["Full Name"]).filter(Boolean);
+  } catch (e) {
+    console.error("Failed to load Airtable driver names", e);
+    return [];
+  }
 }

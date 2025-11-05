@@ -104,3 +104,23 @@
   font-style: italic;
   font-size: 0.9rem;
 }
+.filter-clear-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border-top: 1px solid #eee;
+}
+
+.filter-clear-btn {
+  background: #f6f6f6;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-clear-btn:hover {
+  background: #eaeaea;
+}

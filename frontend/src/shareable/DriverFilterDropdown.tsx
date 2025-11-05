@@ -45,6 +45,12 @@ const DriverFilterDropdown: React.FC<Props> = ({
     onChange(newSelected);
   };
 
+  const handleClear = () => {
+    onChange([]); // clear selected drivers
+    setSearchTerm(""); // reset search
+    setIsOpen(false); // close dropdown
+  };
+
   const filteredDrivers = drivers.filter((driver) =>
     driver.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -78,6 +84,7 @@ const DriverFilterDropdown: React.FC<Props> = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+
           <ul className="filter-dropdown-list">
             {filteredDrivers.length > 0 ? (
               filteredDrivers.map((driver) => (
@@ -99,6 +106,14 @@ const DriverFilterDropdown: React.FC<Props> = ({
               <li className="filter-dropdown-item-none">No drivers found</li>
             )}
           </ul>
+
+          {selectedDrivers.length > 0 && (
+            <div className="filter-clear-wrapper">
+              <button className="filter-clear-btn" onClick={handleClear}>
+                Clear Selection
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

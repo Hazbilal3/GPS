@@ -11,6 +11,7 @@ import {
 } from "react-icons/lu";
 import "../assets/components-css/Payroll.css";
 import DriverFilterDropdown from "../shareable/DriverFilterDropdown";
+import { listAirtableDriverNames } from "../services/airtableApi";
 
 
 type ZipBreakdown = {
@@ -171,15 +172,25 @@ const PayrollPage: React.FC = () => {
     fetchPayrollData();
   }, [isAdmin, driverId, driverName]); 
 
-  useEffect(() => {
-    if (payrollData.length > 0 && isAdmin) {
-      const driverSet = new Set<string>();
-      payrollData.forEach((week) => {
-        week.drivers.forEach((driver) => driverSet.add(driver.driverName));
-      });
-      setAllDrivers(Array.from(driverSet).sort());
-    }
-  }, [payrollData, isAdmin]);
+  // useEffect(() => {
+  //   if (payrollData.length > 0 && isAdmin) {
+  //     const driverSet = new Set<string>();
+  //     payrollData.forEach((week) => {
+  //       week.drivers.forEach((driver) => driverSet.add(driver.driverName));
+  //     });
+  //     setAllDrivers(Array.from(driverSet).sort());
+  //   }
+  // }, [payrollData, isAdmin]);
+  // /  UPDATED: Always load Airtable driver names for the dropdown
+useEffect(() => {
+  const fetchDrivers = async () => {
+    if (!isAdmin) return;
+    const names = await listAirtableDriverNames();
+    console.log("✅ Airtable driver names loaded:", names);
+    setAllDrivers(names);
+  };
+  fetchDrivers();
+}, [isAdmin])
 
   const toggleWeek = (weekNumber: string) => {
     setExpandedWeek((prev) => (prev === weekNumber ? null : weekNumber));

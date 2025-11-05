@@ -630,23 +630,30 @@ const Dashboard: React.FC = () => {
                       <td>{r.barcode ?? ""}</td>
                       <td>{r.sequenceNo ?? "-"}</td>
 
-                      <td>
-                        {r.lastevent ? (
-                          <span
-                            className={`status-badge ${
-                              lastEventStatus === "delivered"
-                                ? "status-delivered"
-                                : lastEventStatus === "attempted"
-                                ? "status-attempted"
-                                : ""
-                            }`}
-                          >
-                            {r.lastevent}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
+<td>
+  {r.lastevent ? (
+    (() => {
+      // normalize the value — remove spaces and lowercase it
+      const normalizedEvent = r.lastevent.trim().toLowerCase();
+
+      const statusClass =
+        normalizedEvent === "delivered"
+          ? "status-delivered"
+          : normalizedEvent === "attempted"
+          ? "status-attempted"
+          : "";
+
+      return (
+        <span className={`status-badge ${statusClass}`}>
+          {r.lastevent.trim()}
+        </span>
+      );
+    })()
+  ) : (
+    "-"
+  )}
+</td>
+
 
                       <td className="text-wrap" style={{ maxWidth: 280 }}>
                         {r.address ?? ""}
