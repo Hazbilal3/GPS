@@ -230,18 +230,34 @@ const Dashboard: React.FC = () => {
         const isMatch = scanStatus === "match" || scanStatus === "matched";
         const lastEvent = String(r.lastevent || "").toLowerCase();
 
-        switch (statusFilter) {
-          case "match":
-            return isMatch;
-          case "mismatch":
-            return !isMatch;
-          case "delivered":
-            return lastEvent === "delivered";
-          case "attempted":
-            return lastEvent === "attempted";
-          default:
-            return true;
-        }
+switch (statusFilter) {
+  case "match":
+    return isMatch;
+  case "mismatch":
+    return !isMatch;
+  case "delivered": {
+    const event = String(r.lastevent || "").toLowerCase().trim();
+    const stat = String(r.status || "").toLowerCase().trim();
+    return (
+      event.includes("delivered") ||
+      stat.includes("delivered") ||
+      event.includes("del") // covers abbreviations like "del."
+    );
+  }
+  case "attempted": {
+    const event = String(r.lastevent || "").toLowerCase().trim();
+    const stat = String(r.status || "").toLowerCase().trim();
+    return (
+      event.includes("attempt") ||
+      stat.includes("attempt") ||
+      event.includes("att") // covers abbreviations
+    );
+  }
+  default:
+    return true;
+}
+
+
       });
     }
 

@@ -303,41 +303,47 @@ useEffect(() => {
   
 
 
-  
-  const filteredPayrollData = payrollData
-    .map((weekData) => {
-       const driversToShow = isAdmin
-        ? weekData.drivers.filter((driver) =>
-            selectedDrivers.length
-              ? selectedDrivers.includes(driver.driverName)
-              : true,
-          )
-        : weekData.drivers;
-        
-      
-      const newTotalStops = driversToShow.reduce(
-        (acc, driver) => acc + driver.totalStops, 0
-      );
-      const newSubtotal = driversToShow.reduce(
-        (acc, driver) => acc + driver.subtotal, 0
-      );
-      const newTotalDeductions = driversToShow.reduce(
-        (acc, driver) => acc + driver.totalDeduction, 0
-      );
-      const newNetPay = driversToShow.reduce(
-        (acc, driver) => acc + driver.netPay, 0
-      );
+const filteredPayrollData = payrollData
+  .map((weekData) => {
+    const driversToShow = isAdmin
+      ? weekData.drivers.filter((driver) =>
+          selectedDrivers.length
+            ? selectedDrivers.some((selected) =>
+                driver.driverName
+                  .toLowerCase()
+                  .includes(selected.toLowerCase())
+              )
+            : true
+        )
+      : weekData.drivers;
 
-      return {
-        ...weekData,
-        drivers: driversToShow,
-        totalStops: newTotalStops, 
-        subtotal: newSubtotal,     
-        totalDeductions: newTotalDeductions, 
-        netPay: newNetPay,                 
-      };
-    })
-    .filter((week) => week.drivers.length > 0);
+    const newTotalStops = driversToShow.reduce(
+      (acc, driver) => acc + driver.totalStops,
+      0
+    );
+    const newSubtotal = driversToShow.reduce(
+      (acc, driver) => acc + driver.subtotal,
+      0
+    );
+    const newTotalDeductions = driversToShow.reduce(
+      (acc, driver) => acc + driver.totalDeduction,
+      0
+    );
+    const newNetPay = driversToShow.reduce(
+      (acc, driver) => acc + driver.netPay,
+      0
+    );
+
+    return {
+      ...weekData,
+      drivers: driversToShow,
+      totalStops: newTotalStops,
+      subtotal: newSubtotal,
+      totalDeductions: newTotalDeductions,
+      netPay: newNetPay,
+    };
+  })
+  .filter((week) => week.drivers.length > 0);
 
   return (
     <AdminLayout
