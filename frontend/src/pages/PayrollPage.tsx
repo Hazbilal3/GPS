@@ -186,7 +186,6 @@ useEffect(() => {
   const fetchDrivers = async () => {
     if (!isAdmin) return;
     const names = await listAirtableDriverNames();
-    console.log("✅ Airtable driver names loaded:", names);
     setAllDrivers(names);
   };
   fetchDrivers();

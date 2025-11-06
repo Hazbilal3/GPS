@@ -82,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
       { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
       { to: "/routes", label: "Routes", icon: <LuMapPin /> }, 
-            { to: "/drivers-directory", label: "Drivers", icon: <LuCar /> },
+            { to: "/drivers-directory", label: "Drivers-Directory", icon: <LuCar /> },
             { to: "/payroll", label: "Payroll", icon: <LuBanknote /> } 
   ];
 
