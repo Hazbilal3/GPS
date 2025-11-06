@@ -308,11 +308,11 @@ const filteredPayrollData = payrollData
     const driversToShow = isAdmin
       ? weekData.drivers.filter((driver) =>
           selectedDrivers.length
-            ? selectedDrivers.some((selected) =>
-                driver.driverName
-                  .toLowerCase()
-                  .includes(selected.toLowerCase())
-              )
+            ? selectedDrivers.some((selected) => {
+                const driverName = driver.driverName?.trim().toLowerCase() || "";
+                const selectedName = selected?.trim().toLowerCase() || "";
+                return driverName.includes(selectedName);
+              })
             : true
         )
       : weekData.drivers;
@@ -344,6 +344,7 @@ const filteredPayrollData = payrollData
     };
   })
   .filter((week) => week.drivers.length > 0);
+
 
   return (
     <AdminLayout
