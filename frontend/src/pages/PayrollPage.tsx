@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react"; // Added useMemo
 import { port } from "../port.interface";
 import AdminLayout from "../shareable/AdminLayout";
 import {
@@ -11,7 +11,9 @@ import {
 } from "react-icons/lu";
 import "../assets/components-css/Payroll.css";
 import DriverFilterDropdown from "../shareable/DriverFilterDropdown";
-import { listAirtableDriverNames } from "../services/airtableApi";
+// REMOVED airtableApi import
+// import { listAirtableDriverNames } from "../services/airtableApi";
+import { listDrivers } from "../services/adminApi"; // ADDED this import
 import PayrollViewToggle from "../components/PayrollViewToggle";
 
 // --- Types (Unchanged) ---
@@ -80,8 +82,9 @@ function getRoleName(): "admin" | "driver" | "" {
 }
 
 const PayrollPage: React.FC = () => {
-
-    const role = getRoleName();
+  // ADDED: Get token for adminApi
+  const token = useMemo(() => localStorage.getItem("token") ?? "", []);
+  const role = getRoleName();
   const isAdmin = role === "admin";
   const [rightName, setRightName] = useState(isAdmin ? "Admin" : "Driver");
 
@@ -241,15 +244,26 @@ const fetchDailyPayrollData = useCallback(async (forceRefresh = false) => {
     fetchPayrollData();
   }, [fetchPayrollData]);
 
-  // Fetch driver names for filter
+  // --- REPLACED: Fetch driver names for filter ---
   useEffect(() => {
     const fetchDrivers = async () => {
       if (!isAdmin) return;
-      const names = await listAirtableDriverNames();
-      setAllDrivers(names);
+      try {
+        // Use the 'listDrivers' function from adminApi
+        const driverData = await listDrivers(token);
+        // Extract just the 'fullName' field
+        const names = driverData
+          .map((d: any) => d.fullName)
+          .filter(Boolean) as string[];
+        setAllDrivers(names.sort());
+      } catch (err) {
+        console.error("Failed to load driver names for filter", err);
+        // Don't crash the page, just make the filter empty
+        setAllDrivers([]);
+      }
     };
     fetchDrivers();
-  }, [isAdmin]);
+  }, [isAdmin, token]); // Add token as a dependency
 
   // --- Event Handlers (Unchanged) ---
   const toggleWeek = (weekNumber: string) => {
@@ -362,7 +376,7 @@ const fetchDailyPayrollData = useCallback(async (forceRefresh = false) => {
     }
   };
 
-  // --- Filter for Weekly View (Unchanged) ---
+  // --- Filter for Weekly View (FIXED) ---
   const filteredPayrollData = payrollData
     .map((weekData) => {
       const driversToShow = isAdmin
@@ -371,7 +385,8 @@ const fetchDailyPayrollData = useCallback(async (forceRefresh = false) => {
               ? selectedDrivers.some((selected) => {
                   const driverName = driver.driverName?.trim().toLowerCase() || "";
                   const selectedName = selected?.trim().toLowerCase() || "";
-                  return driverName.includes(selectedName);
+                  // Use exact match now that sources are the same
+                  return driverName === selectedName;
                 })
               : true,
           )
@@ -405,40 +420,41 @@ const fetchDailyPayrollData = useCallback(async (forceRefresh = false) => {
     })
     .filter((week) => week.drivers.length > 0);
 
-  // --- NEW: Filter for Daily View ---
+  // --- NEW: Filter for Daily View (FIXED) ---
 const filteredDailyData = dailyPayrollData
-  .filter((row) => {
-    if (!isAdmin) return true; // Drivers only see their own data
-    if (selectedDrivers.length === 0) return true; // No filter selected
-    return selectedDrivers.some((selected) => {
-      const driverName = row.driverName?.trim().toLowerCase() || "";
-      const selectedName = selected?.trim().toLowerCase() || "";
-      return driverName.includes(selectedName);
-    });
-  })
+  .filter((row) => {
+    if (!isAdmin) return true; // Drivers only see their own data
+    if (selectedDrivers.length === 0) return true; // No filter selected
+    return selectedDrivers.some((selected) => {
+      const driverName = row.driverName?.trim().toLowerCase() || "";
+      const selectedName = selected?.trim().toLowerCase() || "";
+      // Use exact match now that sources are the same
+      return driverName === selectedName;
+    });
+  })
 .filter((row) => {
-  if (!selectedDate) return true; // if cleared, show all
-  return row.date.startsWith(selectedDate);
+  if (!selectedDate) return true; // if cleared, show all
+  return row.date.startsWith(selectedDate);
 });
 
 
 
   // --- NEW: Toggle Handler ---
 const handleViewChange = (newMode: "weekly" | "daily") => {
-  setViewMode(newMode);
+  setViewMode(newMode);
 
-  if (newMode === "daily") {
-    // Always refetch daily data to ensure freshness
-    fetchDailyPayrollData(true);
-  } else {
-    // Re-fetch weekly to sync updates back
-    fetchPayrollData();
-  }
+  if (newMode === "daily") {
+    // Always refetch daily data to ensure freshness
+    fetchDailyPayrollData(true);
+  } else {
+    // Re-fetch weekly to sync updates back
+    fetchPayrollData();
+  }
 };
 useEffect(() => {
-  if (viewMode === "daily") {
-    fetchDailyPayrollData(true);
-  }
+  if (viewMode === "daily") {
+    fetchDailyPayrollData(true);
+  }
 }, [payrollData, viewMode, fetchDailyPayrollData]);
 
 
@@ -460,7 +476,7 @@ useEffect(() => {
               <th>Pay Period</th>
               <th>Driver</th>
               <th>Total Stops</th>
-              <th>Subtotal</th>
+         <th>Subtotal</th>
               <th>Deduction</th>
               <th>Net Pay</th>
               <th>Actions</th>
@@ -498,7 +514,7 @@ useEffect(() => {
                         <span className="summary-label">total: </span>$
                         {weekData.totalDeductions.toFixed(2)}
                       </td>
-                      <td className="text-success fw-bold">
+                     <td className="text-success fw-bold">
                         <span className="summary-label">sum: </span>$
                         {weekData.netPay.toFixed(2)}
                       </td>
@@ -533,12 +549,12 @@ useEffect(() => {
                                     step="0.01"
                                     className="form-control form-control-sm"
                                     value={currentDeductionValue}
-                                       onChange={(e) =>
+                                      onChange={(e) =>
                                         setCurrentDeductionValue(e.target.value)
                                     }
                                     disabled={isSaving}
                                   />
-                                   {editError && (
+                                  {editError && (
                                     <div className="deduction-edit-error">
                                       {editError}
                                     </div>
@@ -550,25 +566,25 @@ useEffect(() => {
                             </td>
 
                             <td className="text-success fw-bold">
-                             ${driver.netPay.toFixed(2)}
+                             ${driver.netPay.toFixed(2)}
                             </td>
 
                             <td className="action-cell">
                               {isAdmin ? (
                                 isEditingThis ? (
-                                  <div className="deduction-edit-actions">
+                               <div className="deduction-edit-actions">
                                     <button
                                       className="btn btn-sm btn-success-soft"style={{color:"green"}}
                                       onClick={handleSaveDeduction}
                                       disabled={isSaving}
-                                    >
+                                    >
                                         {isSaving ? "..." : <LuCheck />}
                                       </button>
                                     <button
-                                     className="btn btn-sm btn-danger-soft"style={{color:"red"}}
+                                     className="btn btn-sm btn-danger-soft"style={{color:"red"}}
                                       onClick={handleCancelEdit}
                                       disabled={isSaving}
-                                    >
+                           >
                                       <LuX />
                                     </button>
                                   </div>
@@ -576,48 +592,48 @@ useEffect(() => {
                                   <div className="admin-action-buttons">
                                     <button
                                       className="btn btn-sm btn-outline-pay-primary mx-2"
-                                     title="Edit Deduction"
+                                     title="Edit Deduction"
                                       onClick={() =>
                                         handleEditDeduction(
-                                          driver.driverId,
+                                        driver.driverId,
                                           weekData.weekNumber,
-                                         driver.totalDeduction,
+                                         driver.totalDeduction,
                                         )
-                                   }
+                                   }
                                     >
                                       <LuPencil />
                                     </button>
-                                   <button
+                                   <button
                                       className="btn btn-sm btn-outline-pay-primary"
-                                      title="View Details"
+                            title="View Details"
                                       onClick={() =>
                                         handleShowDetails(driver)
-                                      }
-                                    >
-                                 <LuList />
+                           }
+                                >
+                                 <LuList />
                                     </button>
                                   </div>
                                 )
-) : (
-                                <button
+                           ) : (
+                        <button
                                   className="btn btn-outline-pay-primary"
                                   onClick={() => handleShowDetails(driver)}
-                                >
+                         >
                                   Details
-                             </button>
+                             </button>
                               )}
                             </td>
-                         </tr>
-                        );
+                         </tr>
+                       );
                       })}
                   </React.Fragment>
-               );
+               );
               })
             ) : (
-              <tr>
+        <tr>
                 <td colSpan={8} className="text-center p-4">
                   {payrollData.length > 0
-                    ? "No matching payroll data found."
+                   ? "No matching payroll data found."
                     : "No payroll data available."}
                 </td>
               </tr>
@@ -638,7 +654,7 @@ const renderDailyTable = () => (
       </div>
     )}
     {!dailyLoading && !dailyError && (
-      <table className="table table-borderless table-striped align-middle mb-0 custom-table text-center">
+   <table className="table table-borderless table-striped align-middle mb-0 custom-table text-center">
         <thead>
           <tr>
             <th>Date</th>
@@ -657,11 +673,11 @@ const renderDailyTable = () => (
                 {isAdmin && <td>{row.driverName}</td>}
                 <td>{row.totalStops}</td>
                 <td>${row.subtotal.toFixed(2)}</td>
-                <td className="text-danger">
+             <td className="text-danger">
                   ${row.deduction.toFixed(2)}
                 </td>
                 <td className="text-success fw-bold">
-                  ${row.netPay.toFixed(2)}
+              ${row.netPay.toFixed(2)}
                 </td>
               </tr>
             ))
@@ -673,7 +689,7 @@ const renderDailyTable = () => (
                 >
                   {dailyPayrollData.length > 0
                     ? "No matching payroll data found."
-                 : "No daily data available."}
+                 : "No daily data available."}
                 </td>
             </tr>
             )}
@@ -692,39 +708,39 @@ const renderDailyTable = () => (
       <div className="payroll-filter-bar">
         {isAdmin && (
           <DriverFilterDropdown
-           drivers={allDrivers}
+           drivers={allDrivers}
             selectedDrivers={selectedDrivers}
             onChange={setSelectedDrivers}
             title="Driver"
           />
         )}
 {viewMode === "daily" && (
-  <div className=" d-flex align-items-center gap-2 ">
-    <input
-      type="date"
-      className="form-control form-control-sm payroll-date-filter"
-      value={selectedDate || ""}
-      max={new Date().toISOString().split("T")[0]} // restrict to today or before
-      onChange={(e) => setSelectedDate(e.target.value || null)}
-      // style={{
-      //   borderColor: "#3b82f6",
-      //   boxShadow: "0 0 4px rgba(59,130,246,0.4)",
-      // }}
-    />
-    {/* {selectedDate && (
-      <button
-        className="btn btn-sm clear" 
-        onClick={() => setSelectedDate(null)}
-      >
-        Clear
-      </button>
-    )} */}
-  </div>
+ <div className=" d-flex align-items-center gap-2 ">
+    <input
+      type="date"
+      className="form-control form-control-sm payroll-date-filter"
+      value={selectedDate || ""}
+      max={new Date().toISOString().split("T")[0]} // restrict to today or before
+      onChange={(e) => setSelectedDate(e.target.value || null)}
+      // style={{
+      //   borderColor: "#3b82f6",
+      //   boxShadow: "0 0 4px rgba(59,130,246,0.4)",
+      // }}
+    />
+    {/* {selectedDate && (
+      <button
+        className="btn btn-sm clear" 
+        onClick={() => setSelectedDate(null)}
+      >
+        Clear
+      </button>
+    )} */}
+  </div>
 )}
 
         {/* --- NEW: View Mode Toggle --- */}
 <div className="payroll-view-toggle ms-auto">
-  <PayrollViewToggle viewMode={viewMode} onChange={handleViewChange} />
+  <PayrollViewToggle viewMode={viewMode} onChange={handleViewChange} />
 </div>
 
       </div>
@@ -738,33 +754,33 @@ const renderDailyTable = () => (
           <div className="modal-content-pay">
             <button onClick={closeModal} className="btn btn-light">
               <LuX />
-            </button>
+         </button>
             <h6 className="mb-3" style={{ color: "#3b82f6" }}>
               <span style={{ color: "#000" }}>Name:</span>{" "}
               {selectedDriver.driverName} <br />
               <span style={{ color: "#000" }}>OFID:</span>{" "}
-              {selectedDriver.driverId}
+           {selectedDriver.driverId}
             </h6>
             <table className="table table-sm table-bordered">
               <thead>
                 <tr>
                   <th>Zip</th>
                   <th>Stops</th>
-               <th>Rate</th>
+               <th>Rate</th>
                   <th>Amount</th>
                 </tr>
               </thead>
               <tbody>
                 {(selectedDriver.zipBreakdown || []).map((zip, idx) => (
-                  <tr key={idx}>
+          <tr key={idx}>
                 	<td>{zip.zip}</td>
                     <td>{zip.stops}</td>
                     <td>${zip.rate.toFixed(2)}</td>
                     <td>${zip.amount.toFixed(2)}</td>
-               </tr>
+               </tr>
                 ))}
               </tbody>
-           </table>
+           </table>
           </div>
         </div>
       )}
