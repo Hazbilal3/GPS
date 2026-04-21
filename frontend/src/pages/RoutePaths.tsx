@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import AdminLayout from "../shareable/AdminLayout";
 import "../App.css";
 import axios from "axios";
@@ -17,24 +17,287 @@ export interface Route {
   status: string;
 }
 
+type RateField =
+  | "ratePerStop"
+  | "ratePerStopCompanyVehicle"
+  | "baseRate"
+  | "baseRateCompanyVehicle";
+
+// ── Edit Modal ───────────────────────────────────────────────────────────────
+interface EditModalProps {
+  route: Route;
+  token: string;
+  onClose: () => void;
+  onSaved: (updated: Route) => void;
+}
+
+const EditModal: React.FC<EditModalProps> = ({ route, token, onClose, onSaved }) => {
+  const [form, setForm] = useState({
+    ratePerStop: route.ratePerStop != null ? String(route.ratePerStop) : "",
+    ratePerStopCompanyVehicle:
+      route.ratePerStopCompanyVehicle != null
+        ? String(route.ratePerStopCompanyVehicle)
+        : "",
+    baseRate: route.baseRate != null ? String(route.baseRate) : "",
+    baseRateCompanyVehicle:
+      route.baseRateCompanyVehicle != null
+        ? String(route.baseRateCompanyVehicle)
+        : "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const firstRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    firstRef.current?.focus();
+  }, []);
+
+  const handleChange = (field: RateField, val: string) => {
+    // Allow digits, one dot, empty
+    if (val === "" || /^\d*\.?\d*$/.test(val)) {
+      setForm((prev) => ({ ...prev, [field]: val }));
+    }
+  };
+
+  const handleSave = async () => {
+    const patch: Record<string, number> = {};
+    for (const [k, v] of Object.entries(form)) {
+      if (v !== "") {
+        const num = parseFloat(v);
+        if (isNaN(num) || num < 0) {
+          setError(`Invalid value for ${k}`);
+          return;
+        }
+        patch[k] = num;
+      }
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      await axios.patch(`${port}/uploads/route/${route.id}`, patch, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      onSaved({
+        ...route,
+        ratePerStop: form.ratePerStop !== "" ? parseFloat(form.ratePerStop) : null,
+        ratePerStopCompanyVehicle:
+          form.ratePerStopCompanyVehicle !== ""
+            ? parseFloat(form.ratePerStopCompanyVehicle)
+            : null,
+        baseRate: form.baseRate !== "" ? parseFloat(form.baseRate) : null,
+        baseRateCompanyVehicle:
+          form.baseRateCompanyVehicle !== ""
+            ? parseFloat(form.baseRateCompanyVehicle)
+            : null,
+      });
+      onClose();
+    } catch {
+      setError("Failed to save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fields: { key: RateField; label: string }[] = [
+    { key: "ratePerStop", label: "Rate per Stop" },
+    { key: "ratePerStopCompanyVehicle", label: "Rate per Stop (Company Vehicle)" },
+    { key: "baseRate", label: "Base Rate" },
+    { key: "baseRateCompanyVehicle", label: "Base Rate (Company Vehicle)" },
+  ];
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: "var(--card-bg, #1e2535)",
+          borderRadius: 12,
+          padding: "28px 32px",
+          width: 420,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+          color: "var(--text-color, #e0e6f0)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>Edit Rates</div>
+            <div style={{ fontSize: 12, color: "#8896a5", marginTop: 2 }}>
+              Route {route.routeNumber} — {route.description}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#8896a5",
+              fontSize: 20,
+              lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {fields.map(({ key, label }, i) => (
+            <div key={key}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#8896a5",
+                  marginBottom: 5,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                }}
+              >
+                {label}
+              </label>
+              <div style={{ position: "relative" }}>
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 11,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "#8896a5",
+                    fontSize: 14,
+                    pointerEvents: "none",
+                  }}
+                >
+                  $
+                </span>
+                <input
+                  ref={i === 0 ? firstRef : undefined}
+                  type="text"
+                  inputMode="decimal"
+                  value={form[key]}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSave()}
+                  placeholder="0.00"
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px 9px 26px",
+                    background: "var(--input-bg, #151c2c)",
+                    border: "1px solid var(--border-color, #2a3347)",
+                    borderRadius: 7,
+                    color: "var(--text-color, #e0e6f0)",
+                    fontSize: 14,
+                    outline: "none",
+                    boxSizing: "border-box",
+                    appearance: "none",
+                    MozAppearance: "textfield",
+                  } as React.CSSProperties}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#4f9cf9";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--border-color, #2a3347)";
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {error && (
+          <div
+            style={{
+              color: "#e74c3c",
+              fontSize: 13,
+              marginTop: 10,
+              background: "rgba(231,76,60,0.1)",
+              padding: "6px 10px",
+              borderRadius: 6,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div
+          style={{ display: "flex", gap: 10, marginTop: 22, justifyContent: "flex-end" }}
+        >
+          <button
+            onClick={onClose}
+            disabled={saving}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 7,
+              border: "1px solid var(--border-color, #2a3347)",
+              background: "transparent",
+              color: "var(--text-color, #e0e6f0)",
+              cursor: "pointer",
+              fontSize: 14,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              padding: "8px 22px",
+              borderRadius: 7,
+              border: "none",
+              background: saving ? "#3d6b9e" : "#4f9cf9",
+              color: "#fff",
+              cursor: saving ? "not-allowed" : "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main page ────────────────────────────────────────────────────────────────
 const RoutesPage: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   async function loadRoutes() {
     try {
       setLoading(true);
-
       const res = await axios.get<Route[]>(`${port}/uploads/customroute`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data: Route[] = Array.isArray(res.data)
         ? res.data
         : (res.data as any)?.data ?? [];
-
       setRoutes(data);
     } catch (e: any) {
       setError(e?.message || "Failed to load routes");
@@ -47,27 +310,72 @@ const RoutesPage: React.FC = () => {
     loadRoutes();
   }, []);
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  };
+
+  const handleSaved = (updated: Route) => {
+    setRoutes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+    showToast("✅ Rates updated successfully");
+  };
+
+  const fmtRate = (v: number | null) =>
+    v != null ? `$${v}` : <span style={{ color: "#4a5568" }}>–</span>;
+
   return (
     <AdminLayout title="Routes">
+      {/* Toast */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            top: 20,
+            right: 24,
+            zIndex: 9999,
+            background: "#27ae60",
+            color: "#fff",
+            padding: "10px 20px",
+            borderRadius: 8,
+            fontWeight: 600,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
+            fontSize: 14,
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editingRoute && (
+        <EditModal
+          route={editingRoute}
+          token={token}
+          onClose={() => setEditingRoute(null)}
+          onSaved={handleSaved}
+        />
+      )}
+
       {error && <div className="alert alert-danger">{error}</div>}
 
       {loading ? (
-        <div className="card p-3">Loading...</div>
+        <div className="card p-3">Loading…</div>
       ) : (
         <div className="table-responsive card p-3">
           <table className="table table-borderless align-middle mb-0 custom-table text-center">
             <thead>
               <tr>
                 <th>#</th>
-                <th>Route Number</th>
+                <th>Route No.</th>
                 <th>Description</th>
                 <th>Zip Code</th>
-                <th>Rate per Stop</th>
-                <th>Rate per Stop (Company Vehicle)</th>
+                <th>Rate / Stop</th>
+                <th>Rate / Stop (Co. Vehicle)</th>
                 <th>Base Rate</th>
-                <th>Base Rate (Company Vehicle)</th>
+                <th>Base Rate (Co. Vehicle)</th>
                 <th>Zone</th>
                 <th>Status</th>
+                <th>Edit</th>
               </tr>
             </thead>
 
@@ -76,31 +384,24 @@ const RoutesPage: React.FC = () => {
                 routes.map((r, idx) => (
                   <tr key={r.id ?? idx}>
                     <td>{idx + 1}</td>
-                    <td>{r.routeNumber ?? "-"}</td>
-                    <td>{r.description ?? "-"}</td>
-                    <td>
+                    <td>{r.routeNumber ?? "–"}</td>
+                    <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>
+                      {r.description ?? "–"}
+                    </td>
+                    <td style={{ fontSize: 12 }}>
                       {r.zipCode
                         ? r.zipCode
                             .map((z) => `0${z.toString().replace(/^0+/, "")}`)
                             .join(", ")
-                        : "-"}
+                        : "–"}
                     </td>
-
-                    <td>{r.ratePerStop ? `$${r.ratePerStop}` : "-"}</td>
-                    <td>
-                      {r.ratePerStopCompanyVehicle
-                        ? `$${r.ratePerStopCompanyVehicle}`
-                        : "-"}
-                    </td>
-                    <td>{r.baseRate ? `$${r.baseRate}` : "-"}</td>
-                    <td>
-                      {r.baseRateCompanyVehicle
-                        ? `$${r.baseRateCompanyVehicle}`
-                        : "-"}
-                    </td>
+                    <td>{fmtRate(r.ratePerStop)}</td>
+                    <td>{fmtRate(r.ratePerStopCompanyVehicle)}</td>
+                    <td>{fmtRate(r.baseRate)}</td>
+                    <td>{fmtRate(r.baseRateCompanyVehicle)}</td>
                     <td>
                       <span className="badge-soft badge-soft-blue">
-                        {r.zone ?? "-"}
+                        {r.zone ?? "–"}
                       </span>
                     </td>
                     <td>
@@ -111,14 +412,57 @@ const RoutesPage: React.FC = () => {
                             : "badge-soft badge-soft-red"
                         }
                       >
-                        {r.status ?? "-"}
+                        {r.status ?? "–"}
                       </span>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => setEditingRoute(r)}
+                        title="Edit rates"
+                        style={{
+                          background: "none",
+                          border: "1px solid var(--border-color, #2a3347)",
+                          borderRadius: 6,
+                          padding: "5px 8px",
+                          cursor: "pointer",
+                          color: "var(--text-color, #8896a5)",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          transition: "border-color 0.15s, color 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.borderColor = "#4f9cf9";
+                          (e.currentTarget as HTMLElement).style.color = "#4f9cf9";
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.borderColor =
+                            "var(--border-color, #2a3347)";
+                          (e.currentTarget as HTMLElement).style.color =
+                            "var(--text-color, #8896a5)";
+                        }}
+                      >
+                        {/* Pencil SVG */}
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={10} className="text-center py-4 text-muted">
+                  <td colSpan={11} className="text-center py-4 text-muted">
                     No routes found
                   </td>
                 </tr>
