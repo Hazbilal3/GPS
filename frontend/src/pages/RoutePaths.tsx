@@ -280,6 +280,149 @@ const EditModal: React.FC<EditModalProps> = ({ route, token, onClose, onSaved })
   );
 };
 
+
+// ── Add Route Modal ────────────────────────────────────────────────────────────
+const AddRouteModal = ({ token, onClose, onCreated }) => {
+  const [form, setForm] = React.useState({
+    routeNumber: "",
+    description: "",
+    ratePerStop: "",
+    ratePerStopCompanyVehicle: "",
+    baseRate: "",
+    baseRateCompanyVehicle: "",
+    zone: "",
+    status: "Active",
+    zipCode: "",
+  });
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState(null);
+
+  const fields = [
+    { key: "routeNumber", label: "Route Number", placeholder: "e.g. 222" },
+    { key: "description", label: "Description", placeholder: "e.g. PAWCUTUCK" },
+    { key: "ratePerStop", label: "Rate Per Stop ($)", placeholder: "2.35" },
+    { key: "ratePerStopCompanyVehicle", label: "Rate Per Stop - Co. Vehicle ($)", placeholder: "2.00" },
+    { key: "baseRate", label: "Base Rate ($)", placeholder: "Optional" },
+    { key: "baseRateCompanyVehicle", label: "Base Rate - Co. Vehicle ($)", placeholder: "Optional" },
+    { key: "zone", label: "Zone", placeholder: "zone A" },
+    { key: "zipCode", label: "ZIP Codes", placeholder: "06379, 06380 (comma-separated)" },
+  ];
+
+  const handleSave = async () => {
+    if (!form.description.trim() || !form.ratePerStop.trim()) {
+      setError("Description and Rate per Stop are required.");
+      return;
+    }
+    const num = parseFloat(form.ratePerStop);
+    if (isNaN(num) || num < 0) { setError("Invalid rate per stop."); return; }
+
+    setSaving(true);
+    setError(null);
+    try {
+      const payload = {
+        routeNumber: form.routeNumber || undefined,
+        description: form.description,
+        ratePerStop: parseFloat(form.ratePerStop),
+        ratePerStopCompanyVehicle: form.ratePerStopCompanyVehicle ? parseFloat(form.ratePerStopCompanyVehicle) : undefined,
+        baseRate: form.baseRate ? parseFloat(form.baseRate) : undefined,
+        baseRateCompanyVehicle: form.baseRateCompanyVehicle ? parseFloat(form.baseRateCompanyVehicle) : undefined,
+        zone: form.zone || undefined,
+        status: form.status,
+        zipCode: form.zipCode ? form.zipCode.split(",").map(z => z.trim()).filter(Boolean) : [],
+      };
+      const res = await axios.post(`${port}/uploads/route`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      onCreated(res.data);
+      onClose();
+    } catch {
+      setError("Failed to add route.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+        zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div style={{
+        background: "var(--card-bg,#1e2535)", borderRadius: 12,
+        padding: "28px 32px", width: "100%", maxWidth: 480, maxHeight: "90vh",
+        overflowY: "auto", boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+        color: "var(--text-color,#e0e6f0)",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 16 }}>Add New Route</div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#8896a5", fontSize: 20, lineHeight: 1 }}>×</button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {fields.map(({ key, label, placeholder }) => (
+            <div key={key}>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#8896a5", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>
+                {label}
+              </label>
+              <input
+                type="text"
+                value={form[key]}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (['ratePerStop','ratePerStopCompanyVehicle','baseRate','baseRateCompanyVehicle'].includes(key)) {
+                    if (val === "" || /^\d*\.?\d*$/.test(val)) setForm(p => ({ ...p, [key]: val }));
+                  } else {
+                    setForm(p => ({ ...p, [key]: val }));
+                  }
+                }}
+                placeholder={placeholder}
+                style={{
+                  width: "100%", padding: "9px 12px",
+                  background: "var(--input-bg,#151c2c)",
+                  border: "1px solid var(--border-color,#2a3347)", borderRadius: 7,
+                  color: "var(--text-color,#e0e6f0)", fontSize: 14, outline: "none", boxSizing: "border-box",
+                }}
+              />
+            </div>
+          ))}
+          <div>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#8896a5", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm(p => ({ ...p, status: e.target.value }))}
+              style={{
+                width: "100%", padding: "9px 12px",
+                background: "var(--input-bg,#151c2c)",
+                border: "1px solid var(--border-color,#2a3347)", borderRadius: 7,
+                color: "var(--text-color,#e0e6f0)", fontSize: 14, outline: "none",
+              }}
+            >
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ color: "#e74c3c", fontSize: 13, marginTop: 10, background: "rgba(231,76,60,0.1)", padding: "6px 10px", borderRadius: 6 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, marginTop: 22, justifyContent: "flex-end" }}>
+          <button onClick={onClose} disabled={saving} style={{ padding: "8px 18px", borderRadius: 7, border: "1px solid var(--border-color,#2a3347)", background: "transparent", color: "var(--text-color,#e0e6f0)", cursor: "pointer", fontSize: 14 }}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} style={{ padding: "8px 22px", borderRadius: 7, border: "none", background: saving ? "#3d6b9e" : "#4f9cf9", color: "#fff", cursor: saving ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600 }}>
+            {saving ? "Adding…" : "Add Route"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main page ────────────────────────────────────────────────────────────────
 const RoutesPage: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
@@ -288,6 +431,7 @@ const RoutesPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [addingRoute, setAddingRoute] = useState(false);
 
   async function loadRoutes() {
     try {
@@ -318,6 +462,11 @@ const RoutesPage: React.FC = () => {
   const handleSaved = (updated: Route) => {
     setRoutes((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
     showToast("✅ Rates updated successfully");
+  };
+
+  const handleRouteCreated = (newRoute: Route) => {
+    setRoutes((prev) => [newRoute, ...prev]);
+    showToast("✅ Route added successfully");
   };
 
   const fmtRate = (v: number | null) =>
@@ -353,6 +502,40 @@ const RoutesPage: React.FC = () => {
           token={token}
           onClose={() => setEditingRoute(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {/* Add Route button */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+        <button
+          onClick={() => setAddingRoute(true)}
+          style={{
+            background: "#4f9cf9",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "9px 20px",
+            cursor: "pointer",
+            fontWeight: 600,
+            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Route
+        </button>
+      </div>
+
+      {/* Add Route Modal */}
+      {addingRoute && (
+        <AddRouteModal
+          token={token}
+          onClose={() => setAddingRoute(false)}
+          onCreated={handleRouteCreated}
         />
       )}
 

@@ -10,7 +10,8 @@ import {
   LuTrash2,
   LuMapPin,
   LuCar,
-  LuBanknote
+  LuBanknote,
+  LuMessageSquare
 } from "react-icons/lu";
 import "../assets/components-css/Dashboard.css";
 import cmjl from "../assets/pics/dashboard-logo.png";
@@ -80,15 +81,17 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     { to: "/dashboard", label: "Overview", icon: <LuLayoutGrid /> },
     { to: "/drivers", label: "Drivers", icon: <LuUsers /> },
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
-      { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
-      { to: "/routes", label: "Routes", icon: <LuMapPin /> }, 
-            { to: "/drivers-directory", label: "Drivers-Directory", icon: <LuCar /> },
-            { to: "/payroll", label: "Payroll", icon: <LuBanknote /> } 
+    { to: "/delete-data", label: "Delete Data", icon: <LuTrash2 /> },
+    { to: "/routes", label: "Routes", icon: <LuMapPin /> },
+    { to: "/drivers-directory", label: "Drivers-Directory", icon: <LuCar /> },
+    { to: "/payroll", label: "Payroll", icon: <LuBanknote /> },
+    { to: "/disputes", label: "Disputes", icon: <LuMessageSquare /> },
   ];
 
   const driverMenu: MenuItem[] = [
     { to: "/upload", label: "Upload", icon: <LuUpload /> },
-        { to: "/payroll", label: "Payroll", icon: <LuBanknote /> },
+    { to: "/payroll", label: "Payroll", icon: <LuBanknote /> },
+    { to: "/disputes", label: "Disputes", icon: <LuMessageSquare /> },
   ];
 
   const menuItems = useMemo(
