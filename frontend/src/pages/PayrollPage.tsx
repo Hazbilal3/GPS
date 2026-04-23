@@ -814,16 +814,18 @@ const PayrollPage: React.FC = () => {
 
         <div className="filters-card card p-3 mb-4">
           <div className="row align-items-end g-3">
-            <div className="col-md-3">
-              <label className="form-label small text-muted text-uppercase fw-bold">
-                Filter by Driver
-              </label>
-              <DriverFilterDropdown
-                drivers={allDrivers}
-                selectedDrivers={selectedDrivers}
-                onChange={setSelectedDrivers}
-              />
-            </div>
+            {isAdmin && (
+              <div className="col-md-3">
+                <label className="form-label small text-muted text-uppercase fw-bold">
+                  Filter by Driver
+                </label>
+                <DriverFilterDropdown
+                  drivers={allDrivers}
+                  selectedDrivers={selectedDrivers}
+                  onChange={setSelectedDrivers}
+                />
+              </div>
+            )}
             {viewMode === "daily" && (
               <div className="col-md-3">
                 <label className="form-label small text-muted text-uppercase fw-bold">
