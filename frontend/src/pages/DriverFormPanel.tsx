@@ -26,6 +26,7 @@ const DriverFormPanel: React.FC<Props> = ({ onSubmit, onCancel }) => {
     Email: "",
     ["OFID Number"]: "",
     ["Salary Type"]: "Regular",
+    fixedSalary: "",
     Schedule: [],
     ["Day of the Week"]: "Monday",
     ["Driver Available Today?"]: "Yes",
@@ -56,6 +57,9 @@ const DriverFormPanel: React.FC<Props> = ({ onSubmit, onCancel }) => {
       email: form.Email,
       OFIDNumber: Number(form["OFID Number"]) || null,
       salaryType: form["Salary Type"],
+      fixedSalary: form["Salary Type"] === "Fixed Rate"
+        ? (Number(form.fixedSalary) || null)
+        : null,
       schedule: form.Schedule,
       dayoftheweek: form["Day of the Week"],
       driverAvailableToday:
@@ -131,17 +135,32 @@ const DriverFormPanel: React.FC<Props> = ({ onSubmit, onCancel }) => {
         {/* Payroll */}
         <section className="detail-card">
           <h5 className="section-title">Payroll</h5>
-          <div className="info-item" style={{ maxWidth: "250px" }}>
-            <label>Salary Type</label>
-            <select
-              className="form-select"
-              value={form["Salary Type"]}
-              onChange={(e) => handleChange("Salary Type", e.target.value)}
-            >
-              <option>Regular</option>
-              <option>Company Vehicle</option>
-              <option>Fixed Rate</option>
-            </select>
+          <div className="d-flex gap-3 flex-wrap">
+            <div className="info-item" style={{ maxWidth: "250px" }}>
+              <label>Salary Type</label>
+              <select
+                className="form-select"
+                value={form["Salary Type"]}
+                onChange={(e) => handleChange("Salary Type", e.target.value)}
+              >
+                <option>Regular</option>
+                <option>Company Vehicle</option>
+                <option>Fixed Rate</option>
+              </select>
+            </div>
+
+            {form["Salary Type"] === "Fixed Rate" && (
+              <div className="info-item" style={{ maxWidth: "200px" }}>
+                <label>Fixed Daily Salary ($)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="e.g. 245"
+                  value={form.fixedSalary}
+                  onChange={(e) => handleChange("fixedSalary" as any, e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </section>
 

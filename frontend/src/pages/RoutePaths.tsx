@@ -423,6 +423,118 @@ const AddRouteModal = ({ token, onClose, onCreated }) => {
   );
 };
 
+// ── Delete Modal ───────────────────────────────────────────────────────────────
+interface DeleteModalProps {
+  route: Route;
+  token: string;
+  onClose: () => void;
+  onDeleted: (id: number) => void;
+}
+
+const DeleteModal: React.FC<DeleteModalProps> = ({ route, token, onClose, onDeleted }) => {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await axios.delete(`${port}/uploads/route/${route.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      onDeleted(route.id!);
+      onClose();
+    } catch {
+      setError("Failed to delete route. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.45)",
+        zIndex: 1000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        style={{
+          background: "var(--card-bg, #1e2535)",
+          borderRadius: 12,
+          padding: "28px 32px",
+          width: 420,
+          boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+          color: "var(--text-color, #e0e6f0)",
+          textAlign: "center"
+        }}
+      >
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 50, height: 50, borderRadius: "50%", background: "rgba(231,76,60,0.1)", color: "#e74c3c", marginBottom: 16 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </div>
+          <h3 style={{ fontWeight: 700, fontSize: 18, margin: "0 0 8px 0" }}>Delete Route</h3>
+          <p style={{ color: "#8896a5", fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+            Are you sure you want to delete route <strong>{route.routeNumber || route.description}</strong>?<br/>This action cannot be undone.
+          </p>
+        </div>
+
+        {error && (
+          <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 16, background: "rgba(231,76,60,0.1)", padding: "6px 10px", borderRadius: 6 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 24 }}>
+          <button
+            onClick={onClose}
+            disabled={deleting}
+            style={{
+              padding: "9px 24px",
+              borderRadius: 7,
+              border: "1px solid var(--border-color, #2a3347)",
+              background: "transparent",
+              color: "var(--text-color, #e0e6f0)",
+              cursor: deleting ? "not-allowed" : "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{
+              padding: "9px 24px",
+              borderRadius: 7,
+              border: "none",
+              background: "#e74c3c",
+              color: "#fff",
+              cursor: deleting ? "not-allowed" : "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {deleting ? "Deleting…" : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main page ────────────────────────────────────────────────────────────────
 const RoutesPage: React.FC = () => {
   const token = useMemo(() => localStorage.getItem("token") ?? "", []);
@@ -430,6 +542,7 @@ const RoutesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingRoute, setEditingRoute] = useState<Route | null>(null);
+  const [deletingRoute, setDeletingRoute] = useState<Route | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [addingRoute, setAddingRoute] = useState(false);
 
@@ -469,17 +582,9 @@ const RoutesPage: React.FC = () => {
     showToast("✅ Route added successfully");
   };
 
-  const handleDeleteRoute = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this route?")) return;
-    try {
-      await axios.delete(`${port}/uploads/route/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setRoutes((prev) => prev.filter((r) => r.id !== id));
-      showToast("🗑️ Route deleted successfully");
-    } catch (e) {
-      setError("Failed to delete route.");
-    }
+  const handleDeleted = (id: number) => {
+    setRoutes((prev) => prev.filter((r) => r.id !== id));
+    showToast("🗑️ Route deleted successfully");
   };
 
   const fmtRate = (v: number | null) =>
@@ -515,6 +620,16 @@ const RoutesPage: React.FC = () => {
           token={token}
           onClose={() => setEditingRoute(null)}
           onSaved={handleSaved}
+        />
+      )}
+
+      {/* Delete modal */}
+      {deletingRoute && (
+        <DeleteModal
+          route={deletingRoute}
+          token={token}
+          onClose={() => setDeletingRoute(null)}
+          onDeleted={handleDeleted}
         />
       )}
 
@@ -654,7 +769,7 @@ const RoutesPage: React.FC = () => {
                           </svg>
                         </button>
                         <button
-                          onClick={() => r.id && handleDeleteRoute(r.id)}
+                          onClick={() => setDeletingRoute(r)}
                           title="Delete route"
                           style={{
                             background: "none",

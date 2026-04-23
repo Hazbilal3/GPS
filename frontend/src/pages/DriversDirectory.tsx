@@ -28,6 +28,7 @@ export interface Driver {
   Email?: string;
   ["OFID Number"]?: number | string;
   ["Salary Type"]?: string;
+  fixedSalary?: number | null;
   Schedule?: string[];
   ["Day of the Week"]?: string;
   ["Driver Available Today?"]?: string;
@@ -45,12 +46,24 @@ const DriversDirectoryInner: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const { showToast } = useToast();
 
-  async function loadDrivers() {
+  async function loadDrivers(keepSelectedId?: number) {
     try {
       setLoading(true);
       const data = await listAirtableDrivers();
       setDrivers(data);
-      if (data.length > 0) setSelectedDriver(data[0]);
+      if (data.length > 0) {
+        if (keepSelectedId) {
+          const found = data.find((d) => d.id === keepSelectedId);
+          setSelectedDriver(found ?? data[0]);
+        } else {
+          setSelectedDriver((prev) => {
+            if (prev?.id) {
+              return data.find((d) => d.id === prev.id) ?? data[0];
+            }
+            return data[0];
+          });
+        }
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to load drivers");
     } finally {
@@ -76,7 +89,7 @@ const DriversDirectoryInner: React.FC = () => {
   const handleUpdateDriver = async (id: number, driverData: Partial<Driver>) => {
     try {
       await updateDriver(id, driverData);
-      await loadDrivers();
+      await loadDrivers(id);
       showToast("Driver updated successfully", "success");
     } catch (e: any) {
       showToast("Failed to update driver", "error");

@@ -59,11 +59,15 @@ const DriverDetailPanel: React.FC<Props> = ({
       const payload = {
         firstName: editedDriver["First Name"],
         lastName: editedDriver["Last Name"],
+        fullName: editedDriver["Full Name"],
         Status: editedDriver.Status,
         phoneNumber: editedDriver["Phone Number"],
         email: editedDriver.Email,
         OFIDNumber: editedDriver["OFID Number"],
         salaryType: editedDriver["Salary Type"],
+        fixedSalary: editedDriver["Salary Type"] === "Fixed Rate"
+          ? (editedDriver.fixedSalary ?? null)
+          : null,
         schedule: editedDriver.Schedule,
         dayoftheweek: editedDriver["Day of the Week"],
         driverAvailableToday:
@@ -196,22 +200,46 @@ const DriverDetailPanel: React.FC<Props> = ({
         {/* === Payroll Section === */}
         <section className="detail-card">
           <h5 className="section-title">Payroll</h5>
-          <div className="info-item" style={{ maxWidth: "250px" }}>
-            <label>Salary Type</label>
-            {editing ? (
-              <select
-                className="form-select"
-                value={editedDriver["Salary Type"] || "Regular"}
-                onChange={(e) =>
-                  handleChange("Salary Type", e.target.value)
-                }
-              >
-                <option>Regular</option>
-                <option>Company Vehicle</option>
-                <option>Fixed Rate</option>
-              </select>
-            ) : (
-              <span className="info-box">{driver["Salary Type"]}</span>
+          <div className="d-flex gap-3 flex-wrap">
+            <div className="info-item" style={{ maxWidth: "250px" }}>
+              <label>Salary Type</label>
+              {editing ? (
+                <select
+                  className="form-select"
+                  value={editedDriver["Salary Type"] || "Regular"}
+                  onChange={(e) =>
+                    handleChange("Salary Type", e.target.value)
+                  }
+                >
+                  <option>Regular</option>
+                  <option>Company Vehicle</option>
+                  <option>Fixed Rate</option>
+                </select>
+              ) : (
+                <span className="info-box">{driver["Salary Type"]}</span>
+              )}
+            </div>
+
+            {(editing ? editedDriver["Salary Type"] : driver["Salary Type"]) === "Fixed Rate" && (
+              <div className="info-item" style={{ maxWidth: "200px" }}>
+                <label>Fixed Daily Salary ($)</label>
+                {editing ? (
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="e.g. 245"
+                    value={editedDriver.fixedSalary ?? ""}
+                    onChange={(e) =>
+                      handleChange(
+                        "fixedSalary",
+                        e.target.value === "" ? null : Number(e.target.value)
+                      )
+                    }
+                  />
+                ) : (
+                  <span className="info-box">${driver.fixedSalary ?? "-"}</span>
+                )}
+              </div>
             )}
           </div>
         </section>

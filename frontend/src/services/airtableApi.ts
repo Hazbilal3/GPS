@@ -20,6 +20,7 @@ export async function listAirtableDrivers(): Promise<Driver[]> {
           Email: d.email,
           ["OFID Number"]: d.OFIDNumber ?? "-",
           ["Salary Type"]: d.salaryType,
+          fixedSalary: d.fixedSalary ?? null,
           Schedule: d.schedule ?? [],
           ["Day of the Week"]: d.dayoftheweek,
           ["Driver Available Today?"]: d.driverAvailableToday ? "Yes" : "No",

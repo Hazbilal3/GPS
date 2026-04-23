@@ -8,6 +8,7 @@ import {
   LuCheck,
   LuPencil,
   LuList,
+  LuTrash2,
 } from "react-icons/lu";
 import "../assets/components-css/Payroll.css";
 import DriverFilterDropdown from "../shareable/DriverFilterDropdown";
@@ -30,6 +31,7 @@ type Driver = {
   totalDeduction: number;
   totalBonus: number;
   netPay: number;
+  remarks: string;
   zipBreakdown: ZipBreakdown[];
 };
 
@@ -52,6 +54,7 @@ type DriverPayrollRecord = {
   totalDeduction: number;
   totalBonus?: number;
   netPay: number;
+  remarks?: string;
   zipBreakdown: ZipBreakdown[];
 };
 
@@ -128,6 +131,7 @@ const PayrollPage: React.FC = () => {
     weekNumber: number;
   } | null>(null);
   const [currentDeductionValue, setCurrentDeductionValue] = useState<number | string>("");
+  const [currentRemarksValue, setCurrentRemarksValue] = useState<string>("");
   const [editError, setEditError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -174,6 +178,7 @@ const PayrollPage: React.FC = () => {
             totalDeduction: record.totalDeduction,
             totalBonus: record.totalBonus || 0,
             netPay: record.netPay,
+            remarks: record.remarks || "",
             zipBreakdown: record.zipBreakdown || [],
           };
 
@@ -259,15 +264,18 @@ const PayrollPage: React.FC = () => {
     driverId: number,
     weekNumber: number,
     currentAmount: number,
+    currentRemarks: string,
   ) => {
     setEditingDeduction({ driverId, weekNumber });
     setCurrentDeductionValue(currentAmount);
+    setCurrentRemarksValue(currentRemarks || "");
     setEditError(null);
   };
 
   const handleCancelEdit = () => {
     setEditingDeduction(null);
     setCurrentDeductionValue("");
+    setCurrentRemarksValue("");
     setEditError(null);
   };
 
@@ -303,7 +311,12 @@ const PayrollPage: React.FC = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
-        body: JSON.stringify({ driverId, weekNumber, totalDeduction }),
+        body: JSON.stringify({ 
+          driverId, 
+          weekNumber, 
+          totalDeduction, 
+          remarks: currentRemarksValue 
+        }),
       });
 
       if (!res.ok) {
@@ -323,6 +336,7 @@ const PayrollPage: React.FC = () => {
                 ...driver,
                 totalDeduction: updatedPayrollRecord.totalDeduction,
                 netPay: updatedPayrollRecord.netPay,
+                remarks: updatedPayrollRecord.remarks || "",
               };
             }
             return driver;
@@ -422,6 +436,26 @@ const PayrollPage: React.FC = () => {
     }
   };
 
+  const handleDeleteWeek = async (weekNumber: number) => {
+    if (!isAdmin || !window.confirm(`Are you sure you want to delete all payroll records for Week ${weekNumber}?`)) return;
+    
+    try {
+      const res = await fetch(`${port}/uploads/payroll/week/${weekNumber}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete week");
+      
+      setPayrollData(prev => prev.filter(w => w.weekNumber !== weekNumber));
+      fetchDailyPayrollData(true);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   const filteredPayrollData = useMemo(() => {
     return payrollData.map((weekData) => {
       const driversToShow = isAdmin
@@ -488,6 +522,7 @@ const PayrollPage: React.FC = () => {
               <th>Deduction</th>
               <th>Bonus</th>
               <th>Net Pay</th>
+              <th>Description</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -528,7 +563,17 @@ const PayrollPage: React.FC = () => {
                         <span className="summary-label">sum: </span>$
                         {weekData.netPay.toFixed(2)}
                       </td>
-                      <td></td>
+                      <td>
+                        {isAdmin && (
+                          <button 
+                            className="btn btn-sm btn-link text-danger p-0"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteWeek(weekData.weekNumber); }}
+                            title="Delete this week's records"
+                          >
+                            <LuTrash2 size={16} />
+                          </button>
+                        )}
+                      </td>
                     </tr>
 
                     {isExpanded &&
@@ -554,16 +599,26 @@ const PayrollPage: React.FC = () => {
                             <td>{driver.totalStops}</td>
                             <td>${driver.subtotal.toFixed(2)}</td>
 
-                            <td className="text-danger">
+                             <td className="text-danger">
                               {isEditingThis ? (
                                 <div className="deduction-edit-cell">
+                                  <label className="small text-muted mb-1">Amount</label>
                                   <input
                                     type="number"
                                     step="0.01"
-                                    className="form-control form-control-sm"
+                                    className="form-control form-control-sm mb-2"
                                     value={currentDeductionValue}
                                     onChange={(e) => setCurrentDeductionValue(e.target.value)}
                                     disabled={isSaving}
+                                  />
+                                  <label className="small text-muted mb-1">Reason (Remarks)</label>
+                                  <textarea
+                                    className="form-control form-control-sm mb-2"
+                                    rows={2}
+                                    value={currentRemarksValue}
+                                    onChange={(e) => setCurrentRemarksValue(e.target.value)}
+                                    disabled={isSaving}
+                                    placeholder="Enter reason for deduction..."
                                   />
                                   {editError && (
                                     <div className="deduction-edit-error">{editError}</div>
@@ -584,7 +639,7 @@ const PayrollPage: React.FC = () => {
                                     <button
                                       className="btn btn-xs btn-link p-0 text-danger"
                                       title="Edit Deduction"
-                                      onClick={(e) => { e.stopPropagation(); handleEditDeduction(driver.driverId, weekData.weekNumber, driver.totalDeduction); }}
+                                      onClick={(e) => { e.stopPropagation(); handleEditDeduction(driver.driverId, weekData.weekNumber, driver.totalDeduction, driver.remarks); }}
                                       style={{ border: 'none', background: 'none' }}
                                     >
                                       <LuPencil size={14} />
@@ -636,6 +691,10 @@ const PayrollPage: React.FC = () => {
 
                             <td className="text-success fw-bold">
                               ${driver.netPay.toFixed(2)}
+                            </td>
+
+                            <td className="text-muted small">
+                              {driver.remarks || "-"}
                             </td>
 
                             <td className="action-cell">
@@ -713,6 +772,7 @@ const PayrollPage: React.FC = () => {
                           totalDeduction: record.deduction,
                           totalBonus: record.bonus,
                           netPay: record.netPay,
+                          remarks: "",
                           zipBreakdown: [],
                         };
                         handleShowDetails(d);
@@ -804,6 +864,15 @@ const PayrollPage: React.FC = () => {
                         <h4 className="mb-0 text-success fw-bold">${selectedDriver.netPay.toFixed(2)}</h4>
                       </div>
                     </div>
+
+                    {selectedDriver.remarks && (
+                      <div className="col-12">
+                        <div className="p-3 border rounded bg-light">
+                          <label className="text-secondary small text-uppercase fw-bold mb-1 d-block">Deduction Remarks / Description</label>
+                          <p className="mb-0 text-dark" style={{ fontStyle: 'italic' }}>{selectedDriver.remarks}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <h6 className="mt-4 mb-3 text-uppercase small fw-bold text-secondary">Zip Code Breakdown</h6>
